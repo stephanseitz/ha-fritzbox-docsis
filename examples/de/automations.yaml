@@ -1,0 +1,66 @@
+# Beispiel-Automationen (Systemsprache Deutsch).
+# Einfügen: Einstellungen › Automationen › Neu › ⋮ › In YAML bearbeiten (jeweils eine Automation)
+# oder direkt in automations.yaml. notify.notify durch den eigenen Dienst ersetzen,
+# z. B. notify.mobile_app_mein_handy.
+
+- alias: "Kabel: Sync-Verlust melden"
+  description: Meldet jede Neusynchronisierung der FRITZ!Box mit dem Zeitpunkt aus dem Protokoll.
+  mode: queued
+  triggers:
+    - trigger: event
+      event_type: fritzbox_docsis_sync_lost
+  actions:
+    - action: notify.notify
+      data:
+        title: "Kabel-Internet: Sync-Verlust"
+        message: >-
+          {{ as_timestamp(trigger.event.data.timestamp) | timestamp_custom('%d.%m. %H:%M:%S') }}:
+          {{ trigger.event.data.message }}
+          (in 24 h schon {{ states('sensor.fritz_box_kabel_sync_verluste_24_h') }}×)
+
+- alias: "Kabel: Verbindung wieder da"
+  description: Meldet, wenn die Synchronisierung wieder steht.
+  mode: queued
+  triggers:
+    - trigger: event
+      event_type: fritzbox_docsis_sync_restored
+  actions:
+    - action: notify.notify
+      data:
+        title: "Kabel-Internet: wieder synchron"
+        message: >-
+          Seit {{ as_timestamp(trigger.event.data.timestamp) | timestamp_custom('%H:%M:%S') }}:
+          {{ trigger.event.data.message }}
+
+- alias: "Kabel: nicht korrigierbare Fehler"
+  description: Warnt, wenn die Box über 15 Minuten Pakete verliert.
+  mode: single
+  triggers:
+    - trigger: numeric_state
+      entity_id: sensor.fritz_box_kabel_nicht_korrigierbare_fehler_pro_stunde
+      above: 1000
+      for: "00:15:00"
+  actions:
+    - action: notify.notify
+      data:
+        title: "Kabel-Internet: Paketverluste"
+        message: >-
+          {{ states('sensor.fritz_box_kabel_nicht_korrigierbare_fehler_pro_stunde') | int }}
+          nicht korrigierbare Fehler pro Stunde. Auffälligster Kanal:
+          {{ states('sensor.fritz_box_kabel_auffalligster_kanal') }}
+
+- alias: "Kabel: Upstream-Modulation abgesenkt"
+  description: Der Netzbetreiber stuft den OFDMA-Upstream herunter, wenn der Rückkanal schlechter wird.
+  mode: single
+  triggers:
+    - trigger: state
+      entity_id: sensor.fritz_box_kabel_us_ofdma_modulation
+      to: [QPSK, 8QAM, 16QAM, 32QAM, 64QAM]
+      for: "00:30:00"
+  actions:
+    - action: notify.notify
+      data:
+        title: "Kabel-Internet: Rückkanal schlechter"
+        message: >-
+          OFDMA-Upstream läuft nur noch mit {{ trigger.to_state.state }}
+          (Upstream-Pegel max {{ states('sensor.fritz_box_kabel_us_pegel_max') }} dBmV).

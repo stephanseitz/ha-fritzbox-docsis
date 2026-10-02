@@ -1,0 +1,66 @@
+# Example automations (English system language).
+# Paste: Settings › Automations › Create › ⋮ › Edit in YAML (one automation at a time)
+# or straight into automations.yaml. Replace notify.notify with your own service,
+# e.g. notify.mobile_app_my_phone.
+
+- alias: "Cable: report sync loss"
+  description: Reports every FRITZ!Box resync, with the time taken from the FRITZ!Box event log.
+  mode: queued
+  triggers:
+    - trigger: event
+      event_type: fritzbox_docsis_sync_lost
+  actions:
+    - action: notify.notify
+      data:
+        title: "Cable internet: sync lost"
+        message: >-
+          {{ as_timestamp(trigger.event.data.timestamp) | timestamp_custom('%Y-%m-%d %H:%M:%S') }}:
+          {{ trigger.event.data.message }}
+          ({{ states('sensor.fritz_box_cable_sync_losses_24_h') }}× in the last 24 h)
+
+- alias: "Cable: connection restored"
+  description: Reports when the cable modem is back in sync.
+  mode: queued
+  triggers:
+    - trigger: event
+      event_type: fritzbox_docsis_sync_restored
+  actions:
+    - action: notify.notify
+      data:
+        title: "Cable internet: back in sync"
+        message: >-
+          Since {{ as_timestamp(trigger.event.data.timestamp) | timestamp_custom('%H:%M:%S') }}:
+          {{ trigger.event.data.message }}
+
+- alias: "Cable: uncorrectable errors"
+  description: Warns when the modem keeps losing packets for 15 minutes.
+  mode: single
+  triggers:
+    - trigger: numeric_state
+      entity_id: sensor.fritz_box_cable_uncorrectable_errors_per_hour
+      above: 1000
+      for: "00:15:00"
+  actions:
+    - action: notify.notify
+      data:
+        title: "Cable internet: packet loss"
+        message: >-
+          {{ states('sensor.fritz_box_cable_uncorrectable_errors_per_hour') | int }}
+          uncorrectable errors per hour. Worst channel:
+          {{ states('sensor.fritz_box_cable_worst_channel') }}
+
+- alias: "Cable: upstream modulation downgraded"
+  description: The operator downgrades the OFDMA upstream when the return path gets worse.
+  mode: single
+  triggers:
+    - trigger: state
+      entity_id: sensor.fritz_box_cable_us_ofdma_modulation
+      to: [QPSK, 8QAM, 16QAM, 32QAM, 64QAM]
+      for: "00:30:00"
+  actions:
+    - action: notify.notify
+      data:
+        title: "Cable internet: return path degraded"
+        message: >-
+          OFDMA upstream is down to {{ trigger.to_state.state }}
+          (upstream power max {{ states('sensor.fritz_box_cable_us_power_max') }} dBmV).

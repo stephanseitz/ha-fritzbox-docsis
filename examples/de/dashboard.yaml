@@ -1,0 +1,296 @@
+# Dashboard „Kabelanschluss“ – nur Standardkarten, nichts aus HACS nötig.
+#
+# Einfügen: Einstellungen › Dashboards › Dashboard hinzufügen › „Neues Dashboard von Grund auf“
+#   › Bearbeiten › ⋮ › Raw-Konfigurationseditor › Inhalt durch diese Datei ersetzen.
+#
+# Die Entity-IDs gelten für Home Assistant mit Systemsprache Deutsch.
+# 578 MHz und 114 MHz sind Beispielkanäle: durch die Frequenzen deiner auffälligsten
+# Kanäle ersetzen (siehe Sensor „Auffälligster Kanal“, Attribut „Top-Kanäle“).
+
+title: Kabelanschluss
+views:
+- title: Übersicht
+  path: cable
+  icon: mdi:cable-data
+  type: sections
+  max_columns: 3
+  badges:
+  - type: entity
+    entity: binary_sensor.fritz_box_kabel_kabelverbindung
+    show_name: true
+    name: Kabel
+  - type: entity
+    entity: sensor.fritz_box_kabel_sync_verluste_24_h
+    show_name: true
+    name: Abbrüche 24 h
+  - type: entity
+    entity: sensor.fritz_box_kabel_us_ofdma_modulation
+    show_name: true
+    name: Upstream
+  - type: entity
+    entity: sensor.fritz_box_kabel_nicht_korrigierbare_fehler_pro_stunde
+    show_name: true
+    name: Paketverlust/h
+  sections:
+  - type: grid
+    cards:
+    - type: heading
+      heading: Verbindung
+      icon: mdi:lan-connect
+      heading_style: title
+    - type: tile
+      entity: binary_sensor.fritz_box_kabel_kabelverbindung
+      grid_options:
+        columns: 12
+      name: Kabelverbindung
+    - type: tile
+      entity: sensor.fritz_box_kabel_synchron_seit
+      grid_options:
+        columns: 6
+      name: Synchron seit
+      state_content: state
+    - type: tile
+      entity: sensor.fritz_box_kabel_letzter_sync_verlust
+      grid_options:
+        columns: 6
+      name: Letzter Sync-Verlust
+    - type: tile
+      entity: sensor.fritz_box_kabel_sync_verluste_24_h
+      grid_options:
+        columns: 6
+      name: Abbrüche 24 h
+      icon: mdi:counter
+    - type: tile
+      entity: sensor.fritz_box_kabel_sync_verluste_7_tage
+      grid_options:
+        columns: 6
+      name: Abbrüche 7 Tage
+      icon: mdi:counter
+    - type: heading
+      heading: Sync-Ereignisse
+      icon: mdi:timeline-clock-outline
+      heading_style: subtitle
+    - type: logbook
+      target:
+        entity_id:
+        - event.fritz_box_kabel_kabel_synchronisation
+      hours_to_show: 336
+      grid_options:
+        columns: 12
+        rows: 4
+  - type: grid
+    column_span: 2
+    cards:
+    - type: heading
+      heading: Fehler
+      icon: mdi:alert-circle-outline
+      heading_style: title
+    - type: tile
+      entity: sensor.fritz_box_kabel_korrigierbare_fehler_pro_stunde
+      grid_options:
+        columns: 8
+      name: Korrigierbar /h
+      icon: mdi:speedometer
+      features:
+      - type: trend-graph
+        hours_to_show: 24
+    - type: tile
+      entity: sensor.fritz_box_kabel_nicht_korrigierbare_fehler_pro_stunde
+      grid_options:
+        columns: 8
+      name: Nicht korrigierbar /h
+      icon: mdi:alert-octagon-outline
+      features:
+      - type: trend-graph
+        hours_to_show: 24
+    - type: tile
+      entity: sensor.fritz_box_kabel_auffalligster_kanal
+      grid_options:
+        columns: 8
+      name: Auffälligster Kanal
+    - type: history-graph
+      title: Korrigierbare Fehler pro Stunde (24 h)
+      hours_to_show: 24
+      grid_options:
+        columns: full
+        rows: 5
+      entities:
+      - entity: sensor.fritz_box_kabel_ds_578_mhz_korrigierbare_fehler_pro_stunde
+        name: 578 MHz
+        color: '#db4437'
+      - entity: sensor.fritz_box_kabel_ds_114_mhz_korrigierbare_fehler_pro_stunde
+        name: 114 MHz
+        color: '#ffa600'
+      - entity: sensor.fritz_box_kabel_korrigierbare_fehler_pro_stunde
+        name: gesamt
+        color: '#7f7f7f'
+    - type: statistics-graph
+      title: Korrigierte Fehler je Stunde (7 Tage)
+      days_to_show: 7
+      period: hour
+      chart_type: bar
+      stat_types:
+      - change
+      grid_options:
+        columns: full
+        rows: 5
+      entities:
+      - entity: sensor.fritz_box_kabel_ds_578_mhz_korrigierbare_fehler
+        name: 578 MHz
+        color: '#db4437'
+      - entity: sensor.fritz_box_kabel_ds_114_mhz_korrigierbare_fehler
+        name: 114 MHz
+        color: '#ffa600'
+    - type: history-graph
+      title: Nicht korrigierbare Fehler pro Stunde (48 h)
+      hours_to_show: 48
+      grid_options:
+        columns: full
+        rows: 4
+      entities:
+      - entity: sensor.fritz_box_kabel_nicht_korrigierbare_fehler_pro_stunde
+        name: gesamt
+        color: '#db4437'
+  - type: grid
+    column_span: 3
+    cards:
+    - type: heading
+      heading: Pegel & Signalqualität
+      icon: mdi:signal
+      heading_style: title
+      badges:
+      - type: entity
+        entity: sensor.fritz_box_kabel_ds_kanale
+        show_name: true
+        name: DS
+      - type: entity
+        entity: sensor.fritz_box_kabel_us_kanale
+        show_name: true
+        name: US
+    - type: gauge
+      entity: sensor.fritz_box_kabel_ds_pegel_min
+      name: DS Pegel min
+      min: -15
+      max: 25
+      needle: true
+      segments:
+      - from: -15
+        color: '#db4437'
+      - from: -6
+        color: '#ffa600'
+      - from: -2
+        color: '#43a047'
+      - from: 12
+        color: '#ffa600'
+      - from: 18
+        color: '#db4437'
+      grid_options:
+        columns: 3
+        rows: 3
+    - type: gauge
+      entity: sensor.fritz_box_kabel_ds_pegel_max
+      name: DS Pegel max
+      min: -15
+      max: 25
+      needle: true
+      segments:
+      - from: -15
+        color: '#db4437'
+      - from: -6
+        color: '#ffa600'
+      - from: -2
+        color: '#43a047'
+      - from: 12
+        color: '#ffa600'
+      - from: 18
+        color: '#db4437'
+      grid_options:
+        columns: 3
+        rows: 3
+    - type: gauge
+      entity: sensor.fritz_box_kabel_us_pegel_max
+      name: US Pegel max
+      min: 25
+      max: 60
+      needle: true
+      segments:
+      - from: 25
+        color: '#ffa600'
+      - from: 35
+        color: '#43a047'
+      - from: 49
+        color: '#ffa600'
+      - from: 51
+        color: '#db4437'
+      grid_options:
+        columns: 3
+        rows: 3
+    - type: gauge
+      entity: sensor.fritz_box_kabel_ds_mse_schlechtester_kanal
+      name: MSE schlechtester Kanal
+      min: -42
+      max: -25
+      needle: true
+      segments:
+      - from: -42
+        color: '#43a047'
+      - from: -33
+        color: '#ffa600'
+      - from: -31
+        color: '#db4437'
+      grid_options:
+        columns: 3
+        rows: 3
+    - type: markdown
+      text_only: true
+      grid_options:
+        columns: full
+        rows: auto
+      content: '<small>Farbbereiche sind grobe Richtwerte: DS-Pegel ideal etwa −2 bis +12 dBmV, US-Pegel
+        35–49 dBmV, MSE besser als −33 dB.</small>'
+    - type: statistics-graph
+      title: Pegel (30 Tage)
+      days_to_show: 30
+      period: hour
+      chart_type: line
+      stat_types:
+      - mean
+      - min
+      - max
+      grid_options:
+        columns: 12
+        rows: 5
+      entities:
+      - entity: sensor.fritz_box_kabel_ds_pegel_min
+        name: DS min
+      - entity: sensor.fritz_box_kabel_ds_pegel_max
+        name: DS max
+      - entity: sensor.fritz_box_kabel_us_pegel_max
+        name: US max
+    - type: statistics-graph
+      title: Signalqualität (30 Tage)
+      days_to_show: 30
+      period: hour
+      chart_type: line
+      stat_types:
+      - mean
+      - max
+      grid_options:
+        columns: 12
+        rows: 5
+      entities:
+      - entity: sensor.fritz_box_kabel_ds_mse_schlechtester_kanal
+        name: MSE schlechtester Kanal
+      - entity: sensor.fritz_box_kabel_ds_578_mhz_mse
+        name: MSE 578 MHz
+      - entity: sensor.fritz_box_kabel_ds_114_mhz_mse
+        name: MSE 114 MHz
+    - type: history-graph
+      title: Upstream-Modulation (7 Tage)
+      hours_to_show: 168
+      grid_options:
+        columns: 12
+        rows: 3
+      entities:
+      - entity: sensor.fritz_box_kabel_us_ofdma_modulation
+        name: OFDMA

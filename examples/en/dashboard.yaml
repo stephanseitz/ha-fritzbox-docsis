@@ -1,0 +1,296 @@
+# "Cable" dashboard – standard cards only, nothing from HACS required.
+#
+# Paste: Settings › Dashboards › Add dashboard › "New dashboard from scratch"
+#   › Edit › ⋮ › Raw configuration editor › replace the content with this file.
+#
+# Entity IDs are those of a Home Assistant instance with English system language.
+# 578 MHz and 114 MHz are example channels: replace them with the frequencies of your
+# noisiest channels (see sensor "Worst channel", attribute "Top channels").
+
+title: Cable connection
+views:
+- title: Overview
+  path: cable
+  icon: mdi:cable-data
+  type: sections
+  max_columns: 3
+  badges:
+  - type: entity
+    entity: binary_sensor.fritz_box_cable_cable_connection
+    show_name: true
+    name: Cable
+  - type: entity
+    entity: sensor.fritz_box_cable_sync_losses_24_h
+    show_name: true
+    name: Drops 24 h
+  - type: entity
+    entity: sensor.fritz_box_cable_us_ofdma_modulation
+    show_name: true
+    name: Upstream
+  - type: entity
+    entity: sensor.fritz_box_cable_uncorrectable_errors_per_hour
+    show_name: true
+    name: Packet loss/h
+  sections:
+  - type: grid
+    cards:
+    - type: heading
+      heading: Connection
+      icon: mdi:lan-connect
+      heading_style: title
+    - type: tile
+      entity: binary_sensor.fritz_box_cable_cable_connection
+      grid_options:
+        columns: 12
+      name: Cable connection
+    - type: tile
+      entity: sensor.fritz_box_cable_in_sync_since
+      grid_options:
+        columns: 6
+      name: In sync since
+      state_content: state
+    - type: tile
+      entity: sensor.fritz_box_cable_last_sync_loss
+      grid_options:
+        columns: 6
+      name: Last sync loss
+    - type: tile
+      entity: sensor.fritz_box_cable_sync_losses_24_h
+      grid_options:
+        columns: 6
+      name: Drops 24 h
+      icon: mdi:counter
+    - type: tile
+      entity: sensor.fritz_box_cable_sync_losses_7_days
+      grid_options:
+        columns: 6
+      name: Drops 7 days
+      icon: mdi:counter
+    - type: heading
+      heading: Sync events
+      icon: mdi:timeline-clock-outline
+      heading_style: subtitle
+    - type: logbook
+      target:
+        entity_id:
+        - event.fritz_box_cable_cable_sync
+      hours_to_show: 336
+      grid_options:
+        columns: 12
+        rows: 4
+  - type: grid
+    column_span: 2
+    cards:
+    - type: heading
+      heading: Errors
+      icon: mdi:alert-circle-outline
+      heading_style: title
+    - type: tile
+      entity: sensor.fritz_box_cable_correctable_errors_per_hour
+      grid_options:
+        columns: 8
+      name: Correctable /h
+      icon: mdi:speedometer
+      features:
+      - type: trend-graph
+        hours_to_show: 24
+    - type: tile
+      entity: sensor.fritz_box_cable_uncorrectable_errors_per_hour
+      grid_options:
+        columns: 8
+      name: Uncorrectable /h
+      icon: mdi:alert-octagon-outline
+      features:
+      - type: trend-graph
+        hours_to_show: 24
+    - type: tile
+      entity: sensor.fritz_box_cable_worst_channel
+      grid_options:
+        columns: 8
+      name: Worst channel
+    - type: history-graph
+      title: Correctable errors per hour (24 h)
+      hours_to_show: 24
+      grid_options:
+        columns: full
+        rows: 5
+      entities:
+      - entity: sensor.fritz_box_cable_ds_578_mhz_correctable_errors_per_hour
+        name: 578 MHz
+        color: '#db4437'
+      - entity: sensor.fritz_box_cable_ds_114_mhz_correctable_errors_per_hour
+        name: 114 MHz
+        color: '#ffa600'
+      - entity: sensor.fritz_box_cable_correctable_errors_per_hour
+        name: total
+        color: '#7f7f7f'
+    - type: statistics-graph
+      title: Corrected errors per hour (7 days)
+      days_to_show: 7
+      period: hour
+      chart_type: bar
+      stat_types:
+      - change
+      grid_options:
+        columns: full
+        rows: 5
+      entities:
+      - entity: sensor.fritz_box_cable_ds_578_mhz_correctable_errors
+        name: 578 MHz
+        color: '#db4437'
+      - entity: sensor.fritz_box_cable_ds_114_mhz_correctable_errors
+        name: 114 MHz
+        color: '#ffa600'
+    - type: history-graph
+      title: Uncorrectable errors per hour (48 h)
+      hours_to_show: 48
+      grid_options:
+        columns: full
+        rows: 4
+      entities:
+      - entity: sensor.fritz_box_cable_uncorrectable_errors_per_hour
+        name: total
+        color: '#db4437'
+  - type: grid
+    column_span: 3
+    cards:
+    - type: heading
+      heading: Levels & signal quality
+      icon: mdi:signal
+      heading_style: title
+      badges:
+      - type: entity
+        entity: sensor.fritz_box_cable_ds_channels
+        show_name: true
+        name: DS
+      - type: entity
+        entity: sensor.fritz_box_cable_us_channels
+        show_name: true
+        name: US
+    - type: gauge
+      entity: sensor.fritz_box_cable_ds_power_min
+      name: DS power min
+      min: -15
+      max: 25
+      needle: true
+      segments:
+      - from: -15
+        color: '#db4437'
+      - from: -6
+        color: '#ffa600'
+      - from: -2
+        color: '#43a047'
+      - from: 12
+        color: '#ffa600'
+      - from: 18
+        color: '#db4437'
+      grid_options:
+        columns: 3
+        rows: 3
+    - type: gauge
+      entity: sensor.fritz_box_cable_ds_power_max
+      name: DS power max
+      min: -15
+      max: 25
+      needle: true
+      segments:
+      - from: -15
+        color: '#db4437'
+      - from: -6
+        color: '#ffa600'
+      - from: -2
+        color: '#43a047'
+      - from: 12
+        color: '#ffa600'
+      - from: 18
+        color: '#db4437'
+      grid_options:
+        columns: 3
+        rows: 3
+    - type: gauge
+      entity: sensor.fritz_box_cable_us_power_max
+      name: US power max
+      min: 25
+      max: 60
+      needle: true
+      segments:
+      - from: 25
+        color: '#ffa600'
+      - from: 35
+        color: '#43a047'
+      - from: 49
+        color: '#ffa600'
+      - from: 51
+        color: '#db4437'
+      grid_options:
+        columns: 3
+        rows: 3
+    - type: gauge
+      entity: sensor.fritz_box_cable_ds_mse_worst_channel
+      name: MSE worst channel
+      min: -42
+      max: -25
+      needle: true
+      segments:
+      - from: -42
+        color: '#43a047'
+      - from: -33
+        color: '#ffa600'
+      - from: -31
+        color: '#db4437'
+      grid_options:
+        columns: 3
+        rows: 3
+    - type: markdown
+      text_only: true
+      grid_options:
+        columns: full
+        rows: auto
+      content: '<small>Colour ranges are rough guidelines: DS power ideally about −2 to +12 dBmV, US power
+        35–49 dBmV, MSE better than −33 dB.</small>'
+    - type: statistics-graph
+      title: Power levels (30 days)
+      days_to_show: 30
+      period: hour
+      chart_type: line
+      stat_types:
+      - mean
+      - min
+      - max
+      grid_options:
+        columns: 12
+        rows: 5
+      entities:
+      - entity: sensor.fritz_box_cable_ds_power_min
+        name: DS min
+      - entity: sensor.fritz_box_cable_ds_power_max
+        name: DS max
+      - entity: sensor.fritz_box_cable_us_power_max
+        name: US max
+    - type: statistics-graph
+      title: Signal quality (30 days)
+      days_to_show: 30
+      period: hour
+      chart_type: line
+      stat_types:
+      - mean
+      - max
+      grid_options:
+        columns: 12
+        rows: 5
+      entities:
+      - entity: sensor.fritz_box_cable_ds_mse_worst_channel
+        name: MSE worst channel
+      - entity: sensor.fritz_box_cable_ds_578_mhz_mse
+        name: MSE 578 MHz
+      - entity: sensor.fritz_box_cable_ds_114_mhz_mse
+        name: MSE 114 MHz
+    - type: history-graph
+      title: Upstream modulation (7 days)
+      hours_to_show: 168
+      grid_options:
+        columns: 12
+        rows: 3
+      entities:
+      - entity: sensor.fritz_box_cable_us_ofdma_modulation
+        name: OFDMA

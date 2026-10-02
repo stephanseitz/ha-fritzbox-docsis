@@ -1,0 +1,302 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "FRITZ!Box Kabel (DOCSIS)",
+        "description": "Adresse der FRITZ!Box Cable, z. B. `{local_url}` im Heimnetz oder die MyFRITZ!-Adresse `{myfritz_url}`. Am besten einen eigenen FRITZ!Box-Benutzer nur für Home Assistant anlegen (Recht „FRITZ!Box Einstellungen“, für MyFRITZ! zusätzlich „Zugang auch aus dem Internet erlaubt“).",
+        "data": {
+          "url": "Adresse (URL)",
+          "username": "Benutzername",
+          "password": "Kennwort",
+          "verify_ssl": "SSL-Zertifikat prüfen"
+        },
+        "data_description": {
+          "verify_ssl": "Für MyFRITZ!-Adressen eingeschaltet lassen. Für https mit IP-Adresse im Heimnetz ausschalten (selbstsigniertes Zertifikat)."
+        }
+      },
+      "reauth_confirm": {
+        "title": "Erneut anmelden",
+        "description": "Die FRITZ!Box hat die Anmeldung abgelehnt. Bitte Zugangsdaten prüfen.",
+        "data": {
+          "username": "Benutzername",
+          "password": "Kennwort"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "FRITZ!Box nicht erreichbar. Adresse, Port und Erreichbarkeit prüfen.",
+      "invalid_auth": "Anmeldung fehlgeschlagen oder fehlende Rechte (Benutzer braucht „FRITZ!Box Einstellungen“, bei MyFRITZ! auch Internetzugang).",
+      "blocked": "Die FRITZ!Box sperrt die Anmeldung gerade wegen zu vieler Fehlversuche. Kurz warten und erneut versuchen.",
+      "no_cable_data": "Keine Kabel-Informationen gefunden. Ist das eine FRITZ!Box Cable?",
+      "unknown": "Unerwarteter Fehler, Details im Protokoll."
+    },
+    "abort": {
+      "already_configured": "Diese FRITZ!Box ist bereits eingerichtet.",
+      "reauth_successful": "Anmeldung aktualisiert."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Optionen",
+        "data": {
+          "scan_interval": "Abfrageintervall",
+          "fetch_log": "Ereignisprotokoll auswerten (Sync-Verluste)"
+        },
+        "data_description": {
+          "scan_interval": "Empfohlen: 300 s. Kürzere Intervalle erhöhen die Last auf der FRITZ!Box."
+        }
+      }
+    }
+  },
+  "device": {
+    "fritzbox_cable": {
+      "name": "FRITZ!Box Kabel"
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "cable_connection": {
+        "name": "Kabelverbindung",
+        "state_attributes": {
+          "recent_events": {
+            "name": "Letzte Ereignisse"
+          }
+        }
+      }
+    },
+    "event": {
+      "cable_sync": {
+        "name": "Kabel-Synchronisation",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "sync_lost": "Synchronisation verloren",
+              "sync_start": "Synchronisierung beginnt",
+              "sync_ok": "Synchron"
+            }
+          }
+        }
+      }
+    },
+    "sensor": {
+      "ds_power_min": {
+        "name": "DS Pegel min"
+      },
+      "ds_power_max": {
+        "name": "DS Pegel max"
+      },
+      "ds_mse_worst": {
+        "name": "DS MSE schlechtester Kanal"
+      },
+      "ds_mer_worst": {
+        "name": "DS MER schlechtester OFDM-Block"
+      },
+      "us_power_max": {
+        "name": "US Pegel max"
+      },
+      "us_ofdma_modulation": {
+        "name": "US OFDMA Modulation"
+      },
+      "total_corr": {
+        "name": "Korrigierbare Fehler gesamt"
+      },
+      "total_noncorr": {
+        "name": "Nicht korrigierbare Fehler gesamt"
+      },
+      "total_corr_rate": {
+        "name": "Korrigierbare Fehler pro Stunde"
+      },
+      "total_noncorr_rate": {
+        "name": "Nicht korrigierbare Fehler pro Stunde"
+      },
+      "worst_channel": {
+        "name": "Auffälligster Kanal",
+        "state_attributes": {
+          "top_channels": {
+            "name": "Top-Kanäle"
+          }
+        }
+      },
+      "last_sync_lost": {
+        "name": "Letzter Sync-Verlust"
+      },
+      "connected_since": {
+        "name": "Synchron seit"
+      },
+      "sync_losses_24h": {
+        "name": "Sync-Verluste 24 h"
+      },
+      "sync_losses_7d": {
+        "name": "Sync-Verluste 7 Tage"
+      },
+      "ds_channel_count": {
+        "name": "DS Kanäle"
+      },
+      "us_channel_count": {
+        "name": "US Kanäle"
+      },
+      "channel_power": {
+        "name": "{channel} Pegel",
+        "state_attributes": {
+          "docsis": {
+            "name": "DOCSIS"
+          },
+          "channel_id": {
+            "name": "Kanal-ID"
+          },
+          "frequency_mhz": {
+            "name": "Frequenz (MHz)"
+          },
+          "frequency_end_mhz": {
+            "name": "Frequenz Ende (MHz)"
+          },
+          "modulation": {
+            "name": "Modulation"
+          },
+          "active_subcarriers": {
+            "name": "Aktive Subcarrier"
+          }
+        }
+      },
+      "channel_mse": {
+        "name": "{channel} MSE",
+        "state_attributes": {
+          "docsis": {
+            "name": "DOCSIS"
+          },
+          "channel_id": {
+            "name": "Kanal-ID"
+          },
+          "frequency_mhz": {
+            "name": "Frequenz (MHz)"
+          },
+          "frequency_end_mhz": {
+            "name": "Frequenz Ende (MHz)"
+          },
+          "modulation": {
+            "name": "Modulation"
+          },
+          "active_subcarriers": {
+            "name": "Aktive Subcarrier"
+          }
+        }
+      },
+      "channel_mer": {
+        "name": "{channel} MER",
+        "state_attributes": {
+          "docsis": {
+            "name": "DOCSIS"
+          },
+          "channel_id": {
+            "name": "Kanal-ID"
+          },
+          "frequency_mhz": {
+            "name": "Frequenz (MHz)"
+          },
+          "frequency_end_mhz": {
+            "name": "Frequenz Ende (MHz)"
+          },
+          "modulation": {
+            "name": "Modulation"
+          },
+          "active_subcarriers": {
+            "name": "Aktive Subcarrier"
+          }
+        }
+      },
+      "channel_corr": {
+        "name": "{channel} Korrigierbare Fehler",
+        "state_attributes": {
+          "docsis": {
+            "name": "DOCSIS"
+          },
+          "channel_id": {
+            "name": "Kanal-ID"
+          },
+          "frequency_mhz": {
+            "name": "Frequenz (MHz)"
+          },
+          "frequency_end_mhz": {
+            "name": "Frequenz Ende (MHz)"
+          },
+          "modulation": {
+            "name": "Modulation"
+          },
+          "active_subcarriers": {
+            "name": "Aktive Subcarrier"
+          }
+        }
+      },
+      "channel_noncorr": {
+        "name": "{channel} Nicht korrigierbare Fehler",
+        "state_attributes": {
+          "docsis": {
+            "name": "DOCSIS"
+          },
+          "channel_id": {
+            "name": "Kanal-ID"
+          },
+          "frequency_mhz": {
+            "name": "Frequenz (MHz)"
+          },
+          "frequency_end_mhz": {
+            "name": "Frequenz Ende (MHz)"
+          },
+          "modulation": {
+            "name": "Modulation"
+          },
+          "active_subcarriers": {
+            "name": "Aktive Subcarrier"
+          }
+        }
+      },
+      "channel_corr_rate": {
+        "name": "{channel} Korrigierbare Fehler pro Stunde",
+        "state_attributes": {
+          "docsis": {
+            "name": "DOCSIS"
+          },
+          "channel_id": {
+            "name": "Kanal-ID"
+          },
+          "frequency_mhz": {
+            "name": "Frequenz (MHz)"
+          },
+          "frequency_end_mhz": {
+            "name": "Frequenz Ende (MHz)"
+          },
+          "modulation": {
+            "name": "Modulation"
+          },
+          "active_subcarriers": {
+            "name": "Aktive Subcarrier"
+          }
+        }
+      },
+      "channel_noncorr_rate": {
+        "name": "{channel} Nicht korrigierbare Fehler pro Stunde",
+        "state_attributes": {
+          "docsis": {
+            "name": "DOCSIS"
+          },
+          "channel_id": {
+            "name": "Kanal-ID"
+          },
+          "frequency_mhz": {
+            "name": "Frequenz (MHz)"
+          },
+          "frequency_end_mhz": {
+            "name": "Frequenz Ende (MHz)"
+          },
+          "modulation": {
+            "name": "Modulation"
+          },
+          "active_subcarriers": {
+            "name": "Aktive Subcarrier"
+          }
+        }
+      }
+    }
+  }
+}

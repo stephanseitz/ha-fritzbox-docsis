@@ -1,0 +1,310 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "FRITZ!Box Cable (DOCSIS)",
+        "description": "Address of the FRITZ!Box Cable, e.g. `{local_url}` or the MyFRITZ! address `{myfritz_url}`. Create a dedicated FRITZ!Box user (right \"FRITZ!Box settings\", for MyFRITZ! also \"access from the internet\").",
+        "data": {
+          "url": "URL",
+          "username": "Username",
+          "password": "Password",
+          "verify_ssl": "Verify SSL certificate"
+        },
+        "data_description": {
+          "verify_ssl": "Keep enabled for MyFRITZ! addresses. Disable for https with a local IP (self-signed certificate)."
+        }
+      },
+      "reauth_confirm": {
+        "title": "Re-authenticate",
+        "description": "The FRITZ!Box rejected the login.",
+        "data": {
+          "username": "Username",
+          "password": "Password"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Cannot reach the FRITZ!Box.",
+      "invalid_auth": "Login failed or missing permissions.",
+      "blocked": "Login temporarily blocked by the FRITZ!Box after failed attempts.",
+      "no_cable_data": "No cable information found. Is this a FRITZ!Box Cable?",
+      "unknown": "Unexpected error."
+    },
+    "abort": {
+      "already_configured": "Already configured.",
+      "reauth_successful": "Re-authentication successful."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Options",
+        "data": {
+          "scan_interval": "Polling interval",
+          "fetch_log": "Evaluate event log (sync losses)"
+        },
+        "data_description": {
+          "scan_interval": "Recommended: 300 s."
+        }
+      }
+    }
+  },
+  "device": {
+    "fritzbox_cable": {
+      "name": "FRITZ!Box Cable"
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "cable_connection": {
+        "name": "Cable connection",
+        "state_attributes": {
+          "recent_events": {
+            "name": "Recent events"
+          }
+        }
+      }
+    },
+    "event": {
+      "cable_sync": {
+        "name": "Cable sync",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "sync_lost": "Sync lost",
+              "sync_start": "Sync starting",
+              "sync_ok": "In sync"
+            }
+          }
+        }
+      }
+    },
+    "sensor": {
+      "ds_power_min": {
+        "name": "DS power min"
+      },
+      "ds_power_max": {
+        "name": "DS power max"
+      },
+      "ds_mse_worst": {
+        "name": "DS MSE worst channel"
+      },
+      "ds_mer_worst": {
+        "name": "DS MER worst OFDM block"
+      },
+      "us_power_max": {
+        "name": "US power max"
+      },
+      "us_ofdma_modulation": {
+        "name": "US OFDMA modulation"
+      },
+      "total_corr": {
+        "name": "Correctable errors total",
+        "unit_of_measurement": "errors"
+      },
+      "total_noncorr": {
+        "name": "Uncorrectable errors total",
+        "unit_of_measurement": "errors"
+      },
+      "total_corr_rate": {
+        "name": "Correctable errors per hour",
+        "unit_of_measurement": "errors/h"
+      },
+      "total_noncorr_rate": {
+        "name": "Uncorrectable errors per hour",
+        "unit_of_measurement": "errors/h"
+      },
+      "worst_channel": {
+        "name": "Worst channel",
+        "state_attributes": {
+          "top_channels": {
+            "name": "Top channels"
+          }
+        }
+      },
+      "last_sync_lost": {
+        "name": "Last sync loss"
+      },
+      "connected_since": {
+        "name": "In sync since"
+      },
+      "sync_losses_24h": {
+        "name": "Sync losses 24 h"
+      },
+      "sync_losses_7d": {
+        "name": "Sync losses 7 days"
+      },
+      "ds_channel_count": {
+        "name": "DS channels"
+      },
+      "us_channel_count": {
+        "name": "US channels"
+      },
+      "channel_power": {
+        "name": "{channel} power level",
+        "state_attributes": {
+          "docsis": {
+            "name": "DOCSIS"
+          },
+          "channel_id": {
+            "name": "Channel ID"
+          },
+          "frequency_mhz": {
+            "name": "Frequency (MHz)"
+          },
+          "frequency_end_mhz": {
+            "name": "Frequency end (MHz)"
+          },
+          "modulation": {
+            "name": "Modulation"
+          },
+          "active_subcarriers": {
+            "name": "Active subcarriers"
+          }
+        }
+      },
+      "channel_mse": {
+        "name": "{channel} MSE",
+        "state_attributes": {
+          "docsis": {
+            "name": "DOCSIS"
+          },
+          "channel_id": {
+            "name": "Channel ID"
+          },
+          "frequency_mhz": {
+            "name": "Frequency (MHz)"
+          },
+          "frequency_end_mhz": {
+            "name": "Frequency end (MHz)"
+          },
+          "modulation": {
+            "name": "Modulation"
+          },
+          "active_subcarriers": {
+            "name": "Active subcarriers"
+          }
+        }
+      },
+      "channel_mer": {
+        "name": "{channel} MER",
+        "state_attributes": {
+          "docsis": {
+            "name": "DOCSIS"
+          },
+          "channel_id": {
+            "name": "Channel ID"
+          },
+          "frequency_mhz": {
+            "name": "Frequency (MHz)"
+          },
+          "frequency_end_mhz": {
+            "name": "Frequency end (MHz)"
+          },
+          "modulation": {
+            "name": "Modulation"
+          },
+          "active_subcarriers": {
+            "name": "Active subcarriers"
+          }
+        }
+      },
+      "channel_corr": {
+        "name": "{channel} correctable errors",
+        "unit_of_measurement": "errors",
+        "state_attributes": {
+          "docsis": {
+            "name": "DOCSIS"
+          },
+          "channel_id": {
+            "name": "Channel ID"
+          },
+          "frequency_mhz": {
+            "name": "Frequency (MHz)"
+          },
+          "frequency_end_mhz": {
+            "name": "Frequency end (MHz)"
+          },
+          "modulation": {
+            "name": "Modulation"
+          },
+          "active_subcarriers": {
+            "name": "Active subcarriers"
+          }
+        }
+      },
+      "channel_noncorr": {
+        "name": "{channel} uncorrectable errors",
+        "unit_of_measurement": "errors",
+        "state_attributes": {
+          "docsis": {
+            "name": "DOCSIS"
+          },
+          "channel_id": {
+            "name": "Channel ID"
+          },
+          "frequency_mhz": {
+            "name": "Frequency (MHz)"
+          },
+          "frequency_end_mhz": {
+            "name": "Frequency end (MHz)"
+          },
+          "modulation": {
+            "name": "Modulation"
+          },
+          "active_subcarriers": {
+            "name": "Active subcarriers"
+          }
+        }
+      },
+      "channel_corr_rate": {
+        "name": "{channel} correctable errors per hour",
+        "unit_of_measurement": "errors/h",
+        "state_attributes": {
+          "docsis": {
+            "name": "DOCSIS"
+          },
+          "channel_id": {
+            "name": "Channel ID"
+          },
+          "frequency_mhz": {
+            "name": "Frequency (MHz)"
+          },
+          "frequency_end_mhz": {
+            "name": "Frequency end (MHz)"
+          },
+          "modulation": {
+            "name": "Modulation"
+          },
+          "active_subcarriers": {
+            "name": "Active subcarriers"
+          }
+        }
+      },
+      "channel_noncorr_rate": {
+        "name": "{channel} uncorrectable errors per hour",
+        "unit_of_measurement": "errors/h",
+        "state_attributes": {
+          "docsis": {
+            "name": "DOCSIS"
+          },
+          "channel_id": {
+            "name": "Channel ID"
+          },
+          "frequency_mhz": {
+            "name": "Frequency (MHz)"
+          },
+          "frequency_end_mhz": {
+            "name": "Frequency end (MHz)"
+          },
+          "modulation": {
+            "name": "Modulation"
+          },
+          "active_subcarriers": {
+            "name": "Active subcarriers"
+          }
+        }
+      }
+    }
+  }
+}
