@@ -330,3 +330,32 @@ async def test_sync_rate_kept_when_log_rotates(
     assert float(hass.states.get(f"{PREFIX}sync_rate_empfangen").state) == (
         pytest.approx(1003.0)
     )
+
+
+async def test_log_timestamp_jitter_no_duplicate_events(
+    hass: HomeAssistant, setup, freezer: FrozenDateTimeFactory
+) -> None:
+    """The box reports the same entry one second apart -> no new event, stable time."""
+    box, entry = setup
+    events = async_capture_events(hass, "fritzbox_docsis_sync_restored")
+    since = hass.states.get(f"{PREFIX}synchron_seit").state
+
+    def shift(seconds: int) -> None:
+        for item in box.log:
+            if "verfügbar" in item["msg"]:
+                item["time"] = f"09:46:{38 + seconds:02d}"
+
+    for seconds in (1, 0, 1, 0):
+        shift(seconds)
+        await _tick(hass, freezer, timedelta(minutes=5))
+    assert events == []
+    assert hass.states.get(f"{PREFIX}synchron_seit").state == since
+
+    # Also stable across a reload (known timestamps are persisted)
+    await _tick(hass, freezer, timedelta(seconds=5))
+    assert await hass.config_entries.async_reload(entry.entry_id)
+    await hass.async_block_till_done()
+    shift(1)
+    await _tick(hass, freezer, timedelta(minutes=5))
+    assert events == []
+    assert hass.states.get(f"{PREFIX}synchron_seit").state == since
