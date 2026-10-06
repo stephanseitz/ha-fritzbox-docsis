@@ -128,6 +128,12 @@
       "connected_since": {
         "name": "In sync since"
       },
+      "sync_rate_down": {
+        "name": "Sync rate downstream"
+      },
+      "sync_rate_up": {
+        "name": "Sync rate upstream"
+      },
       "sync_losses_24h": {
         "name": "Sync losses 24 h"
       },
