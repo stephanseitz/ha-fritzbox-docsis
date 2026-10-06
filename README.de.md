@@ -158,6 +158,7 @@ Die Entity-IDs folgen der Sprache von Home Assistant. Die Beispiele unten gelten
 | Kabel-Synchronisation | `event.fritz_box_kabel_kabel_synchronisation` | Ereignistypen `sync_lost`, `sync_start`, `sync_ok` |
 | Letzter Sync-Verlust | `sensor.fritz_box_kabel_letzter_sync_verlust` | Zeitpunkt aus dem Protokoll |
 | Synchron seit | `sensor.fritz_box_kabel_synchron_seit` | Zeitpunkt |
+| Sync-Rate Empfangen / Senden | `sensor.fritz_box_kabel_sync_rate_empfangen` | Mbit/s, aus dem letzten Protokolleintrag „Kabel-Internet ist verfügbar“ |
 | Sync-Verluste 24 h / 7 Tage | `sensor.fritz_box_kabel_sync_verluste_24_h` | |
 | Korrigierbare / nicht korrigierbare Fehler gesamt | `sensor.fritz_box_kabel_korrigierbare_fehler_gesamt` | Zähler, startet bei Neusynchronisierung bei 0 |
 | Korrigierbare / nicht korrigierbare Fehler pro Stunde | `sensor.fritz_box_kabel_korrigierbare_fehler_pro_stunde` | Rate über alle Downstream-Kanäle |
