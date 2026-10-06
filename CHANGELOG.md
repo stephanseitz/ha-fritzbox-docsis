@@ -6,6 +6,13 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+- Repeated `sync_ok` events and a jumping "in sync since" value: the FRITZ!Box
+  reports the same log entry one second apart from poll to poll. Timestamps within
+  5 s of an already known entry with the same text are now treated as the same
+  entry (persisted across restarts).
+
 ### Added
 
 - Sensors for the cable sync rate (downstream / upstream), taken from the last
