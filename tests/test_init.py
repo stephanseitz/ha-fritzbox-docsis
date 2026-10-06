@@ -119,6 +119,12 @@ async def test_entities(hass: HomeAssistant, setup) -> None:
     assert hass.states.get(f"{PREFIX}synchron_seit").state.startswith(
         "2026-10-02T07:46:38"
     )
+    down = hass.states.get(f"{PREFIX}sync_rate_empfangen")
+    assert float(down.state) == pytest.approx(1126.4)
+    assert down.attributes["unit_of_measurement"] == "Mbit/s"
+    assert float(hass.states.get(f"{PREFIX}sync_rate_senden").state) == pytest.approx(
+        52.48
+    )
 
     registry = er.async_get(hass)
     disabled = registry.async_get(
@@ -292,3 +298,35 @@ async def test_english_names(
     )
     assert hass.states.get("binary_sensor.fritz_box_cable_cable_connection") is not None
     assert hass.states.get("event.fritz_box_cable_cable_sync") is not None
+
+
+async def test_sync_rate_kept_when_log_rotates(
+    hass: HomeAssistant, setup, freezer: FrozenDateTimeFactory
+) -> None:
+    """The sync rate survives the "cable available" entry rotating out of the log."""
+    box, _ = setup
+    await _tick(hass, freezer, timedelta(seconds=5))  # wait for the delayed save
+    box.log = [e for e in box.log if "Kabel-Internet" not in e["msg"]]
+    await _tick(hass, freezer, timedelta(minutes=5))
+    assert float(hass.states.get(f"{PREFIX}sync_rate_empfangen").state) == (
+        pytest.approx(1126.4)
+    )
+
+    # After a sync loss there is no valid rate until the next "available" entry
+    box.add_log(
+        "02.10.26",
+        "21:57:10",
+        "Kabel-Internet antwortet nicht (Keine Synchronisierung).",
+    )
+    await _tick(hass, freezer, timedelta(minutes=5))
+    assert hass.states.get(f"{PREFIX}sync_rate_empfangen").state == "unknown"
+
+    box.add_log(
+        "02.10.26",
+        "21:59:00",
+        "Kabel-Internet ist verfügbar (Synchronisierung besteht mit 1003000/51200 kbit/s).",
+    )
+    await _tick(hass, freezer, timedelta(minutes=5))
+    assert float(hass.states.get(f"{PREFIX}sync_rate_empfangen").state) == (
+        pytest.approx(1003.0)
+    )
