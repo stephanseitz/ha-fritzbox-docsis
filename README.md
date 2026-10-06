@@ -157,6 +157,7 @@ with German they look like `sensor.fritz_box_kabel_ds_578_mhz_korrigierbare_fehl
 | Cable sync | `event.fritz_box_cable_cable_sync` | Event types `sync_lost`, `sync_start`, `sync_ok`. |
 | Last sync loss | `sensor.fritz_box_cable_last_sync_loss` | Timestamp from the event log |
 | In sync since | `sensor.fritz_box_cable_in_sync_since` | Timestamp |
+| Sync rate downstream / upstream | `sensor.fritz_box_cable_sync_rate_downstream` | Mbit/s, from the last "cable available" log entry |
 | Sync losses 24 h / 7 days | `sensor.fritz_box_cable_sync_losses_24_h` | |
 | Correctable / uncorrectable errors total | `sensor.fritz_box_cable_correctable_errors_total` | Counter, resets on resync |
 | Correctable / uncorrectable errors per hour | `sensor.fritz_box_cable_correctable_errors_per_hour` | Rate across all downstream channels |
