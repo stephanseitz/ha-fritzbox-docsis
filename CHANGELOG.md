@@ -6,6 +6,12 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- Sensors for the cable sync rate (downstream / upstream), taken from the last
+  "cable available" entry in the event log; the last known value is kept when the
+  entry rotates out of the log.
+
 ## [1.0.0] – 2026-10-03
 
 First public release.
