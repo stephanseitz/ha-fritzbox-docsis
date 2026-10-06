@@ -13,6 +13,7 @@ from custom_components.fritzbox_docsis.parser import (
     classify_cable_event,
     parse_docinfo,
     parse_log,
+    parse_sync_rate,
 )
 
 from .mock_fritzbox import BASE_LOG, docinfo_payload
@@ -105,3 +106,13 @@ def test_parse_log_lists() -> None:
 
 def test_classify_negative() -> None:
     assert classify_cable_event("Internetverbindung wurde getrennt.") is None
+
+
+def test_parse_sync_rate() -> None:
+    assert parse_sync_rate(
+        "Kabel-Internet ist verfügbar (Synchronisierung besteht mit 1126400/52480 kbit/s)."
+    ) == (1126400, 52480)
+    assert parse_sync_rate(
+        "Cable internet is available (synchronized with 1126400 / 52480 kbit/s)."
+    ) == (1126400, 52480)
+    assert parse_sync_rate("Kabel-Internet ist verfügbar.") is None
