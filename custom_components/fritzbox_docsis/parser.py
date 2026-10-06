@@ -107,6 +107,21 @@ _CABLE_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
 )
 
 
+_SYNC_RATE_RE = re.compile(r"(\d+)\s*/\s*(\d+)\s*kbit/s", re.IGNORECASE)
+
+
+def parse_sync_rate(message: str) -> tuple[int, int] | None:
+    """Extract the sync rate (down, up) in kbit/s from a "cable available" message.
+
+    Example: "Kabel-Internet ist verfügbar (Synchronisierung besteht mit
+    1126400/52480 kbit/s)." -> (1126400, 52480)
+    """
+    match = _SYNC_RATE_RE.search(message)
+    if not match:
+        return None
+    return int(match.group(1)), int(match.group(2))
+
+
 def classify_cable_event(message: str) -> str | None:
     """Map a log message to a cable event kind (or None)."""
     for kind, pattern in _CABLE_PATTERNS:
