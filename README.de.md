@@ -40,6 +40,7 @@ zusammenhängt und wann genau jede Neusynchronisierung war.
 - [Funktionsweise](#funktionsweise)
 - [Fehlersuche](#fehlersuche)
 - [Entwicklung](#entwicklung)
+- [Hintergrund und Danksagung](#hintergrund-und-danksagung)
 
 ## Funktionen
 
@@ -320,6 +321,24 @@ realistischen Kanaldaten und prüfen Anmeldung (PBKDF2 und MD5), abgelaufene Sit
 Einrichtungsdialog, das Anlegen der Entitäten auf Deutsch und Englisch, Raten,
 Zählerrücksetzungen, Sync-Ereignisse samt Entdoppelung und dass jede in `examples/`
 verwendete Entität existiert. Siehe [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## Hintergrund und Danksagung
+
+Diese Integration ist eine eigenständige Umsetzung. Sie baut auf öffentlich verfügbarem
+Wissen auf:
+
+- **Anmeldung:** Der Challenge-Response-Login über `login_sid.lua` (PBKDF2, MD5 als
+  Rückfall) folgt AVMs offizieller
+  [Technical Note „Session-ID“](https://fritz.com/fileadmin/user_upload/Global/Service/Schnittstellen/AVM_Technical_Note_-_Session_ID_deutsch_2021-05-03.pdf).
+- **Kabeldaten:** `data.lua` mit den Seiten `docInfo` und `log` ist von AVM nicht
+  dokumentiert. Der Aufbau ist dank der Community bekannt, zum Beispiel durch den
+  [ioBroker-Forenthread zum Auslesen der Pegelwerte](https://forum.iobroker.net/topic/38443/pegelwerte-fritzbox-6490-cable-auslesen)
+  und andere Open-Source-Projekte, die dieselbe Schnittstelle nutzen:
+  - [pdreker/fritz_exporter](https://github.com/pdreker/fritz_exporter) – Prometheus-Exporter
+  - [itsDNNS/docsight](https://github.com/itsDNNS/docsight) – DOCSIS-Monitoring mit Weboberfläche
+  - [mulbc/fritzdocsis](https://github.com/mulbc/fritzdocsis) – DOCSIS-Exporter in Go
+
+Danke an alle, die ihre Erkenntnisse geteilt haben.
 
 ## Hinweis
 
