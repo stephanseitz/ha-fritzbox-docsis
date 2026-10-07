@@ -40,6 +40,7 @@ something in your house, and exactly when each resync happened.
 - [How it works](#how-it-works)
 - [Troubleshooting](#troubleshooting)
 - [Development](#development)
+- [Background and acknowledgements](#background-and-acknowledgements)
 
 ## Features
 
@@ -311,6 +312,24 @@ The tests start a small fake FRITZ!Box (`tests/mock_fritzbox.py`) with realistic
 data and cover login (PBKDF2 and MD5), session expiry, the config flow, entity creation in
 English and German, rates, counter resets, sync events and their de-duplication, and that
 every entity referenced in `examples/` exists. See [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## Background and acknowledgements
+
+This integration is an independent implementation. It builds on publicly available
+knowledge:
+
+- **Login:** the challenge-response login via `login_sid.lua` (PBKDF2 with MD5 fallback)
+  follows AVM's official
+  [Technical Note "Session ID"](https://fritz.com/fileadmin/user_upload/Global/Service/Schnittstellen/AVM%20Technical%20Note%20-%20Session%20ID_EN%20-%20Nov2020.pdf).
+- **Cable data:** `data.lua` with the pages `docInfo` and `log` is not documented by AVM.
+  Its structure is known thanks to the community, for example the
+  [ioBroker forum thread on reading FRITZ!Box Cable levels](https://forum.iobroker.net/topic/38443/pegelwerte-fritzbox-6490-cable-auslesen)
+  and other open-source projects that read the same interface:
+  - [pdreker/fritz_exporter](https://github.com/pdreker/fritz_exporter) – Prometheus exporter
+  - [itsDNNS/docsight](https://github.com/itsDNNS/docsight) – DOCSIS monitoring with a web UI
+  - [mulbc/fritzdocsis](https://github.com/mulbc/fritzdocsis) – DOCSIS exporter in Go
+
+Thanks to everyone who shared their findings.
 
 ## Disclaimer
 
