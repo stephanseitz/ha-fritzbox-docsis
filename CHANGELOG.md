@@ -11,6 +11,16 @@ and the project uses [Semantic Versioning](https://semver.org/).
 - The event entity no longer re-fires the previous poll's cable events when a
   poll fails (Home Assistant hands the old data to the entities again).
 
+### Security
+
+- Login refuses an MD5 challenge once the box has offered PBKDF2 (protects against
+  a man-in-the-middle downgrading the login to harvest a weak password hash), and
+  rejects malformed challenges or absurd PBKDF2 iteration counts.
+- `tools/fritz_docsis_check.py` now saves only the cable entries of the event log;
+  the full log contains device names, IP/MAC addresses, logins and calls.
+- All GitHub Actions in the workflows are pinned to commit SHAs (kept up to date
+  by Dependabot), so a moved tag or branch upstream cannot run foreign code.
+
 ## [1.1.0] – 2026-10-07
 
 ### Fixed

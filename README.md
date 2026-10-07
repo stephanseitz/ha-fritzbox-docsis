@@ -123,8 +123,9 @@ python tools/fritz_docsis_check.py --url http://192.168.178.1 --user homeassista
 ```
 
 It asks for the password, prints all channels as a table plus the latest cable events,
-and saves the raw data to `fritz_docsis_raw.json` (without credentials). If something
-looks wrong, that file is the best starting point for an issue.
+and saves the raw data to `fritz_docsis_raw.json` (without credentials, and only the
+cable entries of the event log). If something looks wrong, that file is the best
+starting point for an issue.
 
 ### 4. Add the integration
 

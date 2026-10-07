@@ -18,6 +18,9 @@ from .parser import DocsisInfo, LogEntry, parse_docinfo, parse_log
 _LOGGER = logging.getLogger(__name__)
 
 REQUEST_TIMEOUT = aiohttp.ClientTimeout(total=30)
+# Real boxes use a few 10 000 iterations; anything far above would block a worker
+# thread for minutes on every login
+MAX_PBKDF2_ITERATIONS = 1_000_000
 
 
 class FritzError(Exception):
@@ -43,6 +46,8 @@ class FritzDataError(FritzError):
 def _pbkdf2_response(challenge: str, password: str) -> str:
     """Response for the PBKDF2 method (login_sid.lua?version=2, FRITZ!OS >= 7.24)."""
     _, iter1, salt1, iter2, salt2 = challenge.split("$")
+    if not all(0 < int(i) <= MAX_PBKDF2_ITERATIONS for i in (iter1, iter2)):
+        raise ValueError("PBKDF2 iteration count out of range")
     hash1 = hashlib.pbkdf2_hmac(
         "sha256", password.encode("utf-8"), bytes.fromhex(salt1), int(iter1)
     )
@@ -79,6 +84,7 @@ class FritzDocsisClient:
         self._username = username
         self._password = password
         self._sid: str | None = None
+        self._pbkdf2_seen = False
         self._lock = asyncio.Lock()
 
     @property
@@ -122,11 +128,23 @@ class FritzDocsisClient:
         if not challenge:
             raise FritzConnectionError("No challenge received from the FRITZ!Box")
 
+        if challenge.startswith("2$"):
+            self._pbkdf2_seen = True
+        elif self._pbkdf2_seen:
+            # A box that supports PBKDF2 never falls back by itself; an MD5
+            # challenge now points to someone in between harvesting a weak hash
+            raise FritzConnectionError(
+                "FRITZ!Box suddenly offers only the weak MD5 login – refusing"
+            )
+
         loop = asyncio.get_running_loop()
         # PBKDF2 with many iterations is CPU-heavy -> keep it off the event loop
-        response = await loop.run_in_executor(
-            None, compute_response, challenge, self._password
-        )
+        try:
+            response = await loop.run_in_executor(
+                None, compute_response, challenge, self._password
+            )
+        except ValueError as err:
+            raise FritzConnectionError("Malformed login challenge") from err
 
         root = await self._get_xml(
             "POST",
