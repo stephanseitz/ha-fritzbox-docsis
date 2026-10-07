@@ -6,6 +6,8 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.1.1] – 2026-10-07
+
 ### Fixed
 
 - The event entity no longer re-fires the previous poll's cable events when a
@@ -60,5 +62,6 @@ First public release.
 - Stand-alone check script `tools/fritz_docsis_check.py` (Python 3.10+, no dependencies).
 - Test suite against a simulated FRITZ!Box; CI with hassfest, HACS validation, ruff and pytest.
 
+[1.1.1]: https://github.com/stephanseitz/ha-fritzbox-docsis/releases/tag/v1.1.1
 [1.1.0]: https://github.com/stephanseitz/ha-fritzbox-docsis/releases/tag/v1.1.0
 [1.0.0]: https://github.com/stephanseitz/ha-fritzbox-docsis/releases/tag/v1.0.0

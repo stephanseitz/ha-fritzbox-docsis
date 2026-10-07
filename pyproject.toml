@@ -1,6 +1,6 @@
 [project]
 name = "ha-fritzbox-docsis"
-version = "1.1.0"
+version = "1.1.1"
 description = "Home Assistant integration for the DOCSIS cable data of a FRITZ!Box Cable"
 readme = "README.md"
 license = "MIT"
