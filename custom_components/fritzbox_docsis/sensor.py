@@ -12,7 +12,7 @@ from homeassistant.components.sensor import (
     SensorEntityDescription,
     SensorStateClass,
 )
-from homeassistant.const import EntityCategory
+from homeassistant.const import EntityCategory, UnitOfDataRate
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
@@ -173,6 +173,28 @@ GLOBAL_SENSORS: tuple[DocsisSensorDescription, ...] = (
         device_class=SensorDeviceClass.TIMESTAMP,
         icon="mdi:lan-connect",
         value_fn=lambda d: d.connected_since,
+        needs_log=True,
+    ),
+    DocsisSensorDescription(
+        key="sync_rate_down",
+        device_class=SensorDeviceClass.DATA_RATE,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfDataRate.KILOBITS_PER_SECOND,
+        suggested_unit_of_measurement=UnitOfDataRate.MEGABITS_PER_SECOND,
+        suggested_display_precision=1,
+        icon="mdi:download-network",
+        value_fn=lambda d: d.sync_rate_down,
+        needs_log=True,
+    ),
+    DocsisSensorDescription(
+        key="sync_rate_up",
+        device_class=SensorDeviceClass.DATA_RATE,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfDataRate.KILOBITS_PER_SECOND,
+        suggested_unit_of_measurement=UnitOfDataRate.MEGABITS_PER_SECOND,
+        suggested_display_precision=1,
+        icon="mdi:upload-network",
+        value_fn=lambda d: d.sync_rate_up,
         needs_log=True,
     ),
     DocsisSensorDescription(

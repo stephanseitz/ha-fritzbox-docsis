@@ -119,6 +119,12 @@ async def test_entities(hass: HomeAssistant, setup) -> None:
     assert hass.states.get(f"{PREFIX}synchron_seit").state.startswith(
         "2026-10-02T07:46:38"
     )
+    down = hass.states.get(f"{PREFIX}sync_rate_empfangen")
+    assert float(down.state) == pytest.approx(1126.4)
+    assert down.attributes["unit_of_measurement"] == "Mbit/s"
+    assert float(hass.states.get(f"{PREFIX}sync_rate_senden").state) == pytest.approx(
+        52.48
+    )
 
     registry = er.async_get(hass)
     disabled = registry.async_get(
@@ -292,3 +298,64 @@ async def test_english_names(
     )
     assert hass.states.get("binary_sensor.fritz_box_cable_cable_connection") is not None
     assert hass.states.get("event.fritz_box_cable_cable_sync") is not None
+
+
+async def test_sync_rate_kept_when_log_rotates(
+    hass: HomeAssistant, setup, freezer: FrozenDateTimeFactory
+) -> None:
+    """The sync rate survives the "cable available" entry rotating out of the log."""
+    box, _ = setup
+    await _tick(hass, freezer, timedelta(seconds=5))  # wait for the delayed save
+    box.log = [e for e in box.log if "Kabel-Internet" not in e["msg"]]
+    await _tick(hass, freezer, timedelta(minutes=5))
+    assert float(hass.states.get(f"{PREFIX}sync_rate_empfangen").state) == (
+        pytest.approx(1126.4)
+    )
+
+    # After a sync loss there is no valid rate until the next "available" entry
+    box.add_log(
+        "02.10.26",
+        "21:57:10",
+        "Kabel-Internet antwortet nicht (Keine Synchronisierung).",
+    )
+    await _tick(hass, freezer, timedelta(minutes=5))
+    assert hass.states.get(f"{PREFIX}sync_rate_empfangen").state == "unknown"
+
+    box.add_log(
+        "02.10.26",
+        "21:59:00",
+        "Kabel-Internet ist verfügbar (Synchronisierung besteht mit 1003000/51200 kbit/s).",
+    )
+    await _tick(hass, freezer, timedelta(minutes=5))
+    assert float(hass.states.get(f"{PREFIX}sync_rate_empfangen").state) == (
+        pytest.approx(1003.0)
+    )
+
+
+async def test_log_timestamp_jitter_no_duplicate_events(
+    hass: HomeAssistant, setup, freezer: FrozenDateTimeFactory
+) -> None:
+    """The box reports the same entry one second apart -> no new event, stable time."""
+    box, entry = setup
+    events = async_capture_events(hass, "fritzbox_docsis_sync_restored")
+    since = hass.states.get(f"{PREFIX}synchron_seit").state
+
+    def shift(seconds: int) -> None:
+        for item in box.log:
+            if "verfügbar" in item["msg"]:
+                item["time"] = f"09:46:{38 + seconds:02d}"
+
+    for seconds in (1, 0, 1, 0):
+        shift(seconds)
+        await _tick(hass, freezer, timedelta(minutes=5))
+    assert events == []
+    assert hass.states.get(f"{PREFIX}synchron_seit").state == since
+
+    # Also stable across a reload (known timestamps are persisted)
+    await _tick(hass, freezer, timedelta(seconds=5))
+    assert await hass.config_entries.async_reload(entry.entry_id)
+    await hass.async_block_till_done()
+    shift(1)
+    await _tick(hass, freezer, timedelta(minutes=5))
+    assert events == []
+    assert hass.states.get(f"{PREFIX}synchron_seit").state == since

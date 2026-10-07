@@ -37,9 +37,15 @@ from .parser import (
     DocsisInfo,
     LogEntry,
     classify_cable_event,
+    parse_sync_rate,
 )
 
 _LOGGER = logging.getLogger(__name__)
+
+# The FRITZ!Box derives log timestamps from its uptime, so the same entry can be
+# reported one second apart from poll to poll (e.g. 21:46:23 / 21:46:24).
+LOG_JITTER = timedelta(seconds=5)
+MAX_KNOWN_EVENTS = 50
 
 
 @dataclass(slots=True)
@@ -82,6 +88,8 @@ class DocsisData:
     connected_since: datetime | None = None
     sync_losses_24h: int | None = None
     sync_losses_7d: int | None = None
+    sync_rate_down: int | None = None  # kbit/s, from the last "cable available" entry
+    sync_rate_up: int | None = None
     recent_events: list[CableEvent] = field(default_factory=list)
     new_events: list[CableEvent] = field(default_factory=list)
 
@@ -116,6 +124,7 @@ class FritzDocsisCoordinator(DataUpdateCoordinator[DocsisData]):
         self._prev_counters: dict[str, tuple[int | None, int | None]] = {}
         self._prev_totals: tuple[int, int] | None = None
         self._prev_ts: datetime | None = None
+        self._known_events: list[CableEvent] | None = None
 
     @property
     def fetch_log(self) -> bool:
@@ -218,6 +227,42 @@ class FritzDocsisCoordinator(DataUpdateCoordinator[DocsisData]):
         self._prev_totals = (total_corr, total_noncorr)
         self._prev_ts = now
 
+    def _stabilize_timestamps(self, events: list[CableEvent]) -> None:
+        """Snap jittering log timestamps to the time first seen for that entry."""
+        if self._known_events is None:
+            stored = self._stored or {}
+            self._known_events = []
+            for item in stored.get("known_events", []):
+                try:
+                    message, iso = item
+                    ts = datetime.fromisoformat(iso)
+                except (TypeError, ValueError):
+                    continue
+                self._known_events.append(
+                    CableEvent(kind="", timestamp=ts, message=message)
+                )
+        for event in events:
+            for known in self._known_events:
+                if (
+                    known.message == event.message
+                    and abs(known.timestamp - event.timestamp) <= LOG_JITTER
+                ):
+                    event.timestamp = known.timestamp
+                    break
+            else:
+                self._known_events.append(
+                    CableEvent(
+                        kind=event.kind,
+                        timestamp=event.timestamp,
+                        message=event.message,
+                    )
+                )
+        if len(self._known_events) > MAX_KNOWN_EVENTS:
+            self._known_events = sorted(
+                self._known_events, key=lambda e: e.timestamp, reverse=True
+            )[:MAX_KNOWN_EVENTS]
+        events.sort(key=lambda e: e.timestamp, reverse=True)
+
     def _evaluate_log(
         self, data: DocsisData, log: list[LogEntry], now: datetime
     ) -> None:
@@ -234,6 +279,8 @@ class FritzDocsisCoordinator(DataUpdateCoordinator[DocsisData]):
                     message=entry.message,
                 )
             )
+
+        self._stabilize_timestamps(events)
 
         data.recent_events = events[:20]
         losses = [e for e in events if e.kind == CABLE_SYNC_LOST]
@@ -255,8 +302,28 @@ class FritzDocsisCoordinator(DataUpdateCoordinator[DocsisData]):
         if latest is None or latest.kind != CABLE_SYNC_OK:
             data.connected_since = None
 
-        # Determine new events since the last run (persisted across restarts)
         stored = self._stored if self._stored is not None else {}
+        new_stored = dict(stored)
+
+        # Sync rate: from the newest "cable available" entry. If the entry has
+        # rotated out of the log (long uptime), keep the last known value.
+        rate: tuple[int, int] | None = None
+        if latest is not None and latest.kind == CABLE_SYNC_OK:
+            rate = parse_sync_rate(latest.message)
+            if rate is not None:
+                new_stored["sync_rate"] = list(rate)
+            else:
+                new_stored.pop("sync_rate", None)
+        elif latest is None:
+            saved = stored.get("sync_rate")
+            if isinstance(saved, list) and len(saved) == 2:
+                rate = (int(saved[0]), int(saved[1]))
+        else:
+            new_stored.pop("sync_rate", None)
+        if rate is not None:
+            data.sync_rate_down, data.sync_rate_up = rate
+
+        # Determine new events since the last run (persisted across restarts)
         last_iso: str | None = stored.get("last_event_ts")
         seen_at_last: list[str] = stored.get("seen_at_last", [])
 
@@ -275,11 +342,18 @@ class FritzDocsisCoordinator(DataUpdateCoordinator[DocsisData]):
                 ]
             data.new_events.extend(sorted(new, key=lambda e: e.timestamp))
 
-            stored = {
-                "last_event_ts": newest.isoformat(),
-                "seen_at_last": [e.message for e in events if e.timestamp == newest],
-            }
-            if stored != self._stored:
-                self._stored = stored
-                # Delayed save; Store is guaranteed to flush when HA shuts down
-                self._store.async_delay_save(lambda: stored, 2)
+            new_stored["known_events"] = [
+                [e.message, e.timestamp.isoformat()]
+                for e in sorted(
+                    self._known_events, key=lambda e: e.timestamp, reverse=True
+                )[:MAX_KNOWN_EVENTS]
+            ]
+            new_stored["last_event_ts"] = newest.isoformat()
+            new_stored["seen_at_last"] = [
+                e.message for e in events if e.timestamp == newest
+            ]
+
+        if new_stored != self._stored:
+            self._stored = new_stored
+            # Delayed save; Store is guaranteed to flush when HA shuts down
+            self._store.async_delay_save(lambda: new_stored, 2)

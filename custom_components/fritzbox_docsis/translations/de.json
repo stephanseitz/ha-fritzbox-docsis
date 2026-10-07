@@ -124,6 +124,12 @@
       "connected_since": {
         "name": "Synchron seit"
       },
+      "sync_rate_down": {
+        "name": "Sync-Rate Empfangen"
+      },
+      "sync_rate_up": {
+        "name": "Sync-Rate Senden"
+      },
       "sync_losses_24h": {
         "name": "Sync-Verluste 24 h"
       },
