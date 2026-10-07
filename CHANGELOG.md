@@ -6,6 +6,11 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+- The event entity no longer re-fires the previous poll's cable events when a
+  poll fails (Home Assistant hands the old data to the entities again).
+
 ## [1.1.0] – 2026-10-07
 
 ### Fixed

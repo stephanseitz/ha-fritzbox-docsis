@@ -6,7 +6,7 @@ from homeassistant.components.event import EventEntity
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
-from .coordinator import FritzDocsisConfigEntry, FritzDocsisCoordinator
+from .coordinator import DocsisData, FritzDocsisConfigEntry, FritzDocsisCoordinator
 from .entity import FritzDocsisEntity
 from .parser import CABLE_SYNC_LOST, CABLE_SYNC_OK, CABLE_SYNC_START
 
@@ -30,10 +30,14 @@ class CableSyncEvent(FritzDocsisEntity, EventEntity):
 
     def __init__(self, coordinator: FritzDocsisCoordinator) -> None:
         super().__init__(coordinator, "cable_sync_event")
+        self._handled_data: DocsisData | None = coordinator.data
 
     @callback
     def _handle_coordinator_update(self) -> None:
-        new_events = self.coordinator.data.new_events
+        data = self.coordinator.data
+        # A failed update notifies listeners with the previous data again
+        new_events = [] if data is self._handled_data else data.new_events
+        self._handled_data = data
         if not new_events:
             # only refresh availability
             self.async_write_ha_state()

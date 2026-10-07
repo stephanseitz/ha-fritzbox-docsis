@@ -183,6 +183,28 @@ async def test_sync_lost_event(
     assert len(events) == 1
 
 
+async def test_failed_update_does_not_repeat_event(
+    hass: HomeAssistant, setup, freezer: FrozenDateTimeFactory
+) -> None:
+    box, _ = setup
+    await _tick(hass, freezer, timedelta(minutes=5))
+    box.add_log(
+        "02.10.26",
+        "21:57:10",
+        "Kabel-Internet antwortet nicht (Keine Synchronisierung).",
+    )
+    await _tick(hass, freezer, timedelta(minutes=5))
+    event_id = "event.fritz_box_kabel_kabel_synchronisation"
+    fired_at = hass.states.get(event_id).state
+
+    # A failed poll hands the previous data to the listeners again
+    box.fail_docinfo = True
+    await _tick(hass, freezer, timedelta(minutes=5))
+    box.fail_docinfo = False
+    await _tick(hass, freezer, timedelta(minutes=5))
+    assert hass.states.get(event_id).state == fired_at
+
+
 async def test_counter_reset_without_log(
     hass: HomeAssistant, fritzbox, freezer: FrozenDateTimeFactory
 ) -> None:
