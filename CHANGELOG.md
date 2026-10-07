@@ -18,6 +18,8 @@ and the project uses [Semantic Versioning](https://semver.org/).
   rejects malformed challenges or absurd PBKDF2 iteration counts.
 - `tools/fritz_docsis_check.py` now saves only the cable entries of the event log;
   the full log contains device names, IP/MAC addresses, logins and calls.
+- All GitHub Actions in the workflows are pinned to commit SHAs (kept up to date
+  by Dependabot), so a moved tag or branch upstream cannot run foreign code.
 
 ## [1.1.0] – 2026-10-07
 
