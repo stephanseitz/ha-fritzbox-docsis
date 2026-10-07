@@ -10,7 +10,9 @@ You will be prompted for the password. The script
   2. reads the cable information (data.lua?page=docInfo) and prints it as a table,
   3. reads the event log and shows the latest cable events,
   4. saves the raw data as JSON (fritz_docsis_raw.json) – useful if something
-     does not look right. The file contains no credentials.
+     does not look right. The file contains no credentials and only the cable
+     entries of the event log (the full log lists devices, IP addresses, logins
+     and calls).
 """
 
 from __future__ import annotations
@@ -51,6 +53,23 @@ def compute_response(challenge: str, password: str) -> str:
         return f"{s2}${h2.hex()}"
     safe = "".join(c if ord(c) < 256 else "." for c in password)
     return f"{challenge}-{hashlib.md5(f'{challenge}-{safe}'.encode('utf-16le')).hexdigest()}"
+
+
+def _log_message(item: object) -> str:
+    if isinstance(item, dict):
+        return str(item.get("msg") or item.get("message") or item.get("text") or "")
+    if isinstance(item, (list, tuple)) and len(item) >= 3:
+        return str(item[2])
+    return ""
+
+
+def cable_log_only(payload: dict) -> dict:
+    """Keep only the cable entries of the event log for the raw data file."""
+    data = payload.get("data")
+    log = data.get("log") if isinstance(data, dict) else None
+    if not isinstance(log, list):
+        return {}
+    return {"data": {"log": [i for i in log if classify_cable_event(_log_message(i))]}}
 
 
 class Box:
@@ -180,11 +199,12 @@ def main() -> None:
         except ValueError as err:
             print(f"  Could not read the log: {err}")
 
-        for payload in (raw_doc, raw_log):
-            payload.pop("sid", None)
+        raw_doc.pop("sid", None)
         Path(args.out).write_text(
             json.dumps(
-                {"docInfo": raw_doc, "log": raw_log}, ensure_ascii=False, indent=1
+                {"docInfo": raw_doc, "log": cable_log_only(raw_log)},
+                ensure_ascii=False,
+                indent=1,
             ),
             encoding="utf-8",
         )

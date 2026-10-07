@@ -37,6 +37,30 @@ async def test_login_md5(fritzbox) -> None:
         assert info.downstream
 
 
+async def test_md5_downgrade_refused(fritzbox) -> None:
+    box, url = fritzbox
+    async with aiohttp.ClientSession() as session:
+        client = FritzDocsisClient(session, url, USERNAME, PASSWORD)
+        await client.get_docsis()
+        box.md5 = True
+        box.expire_sessions = True
+        with pytest.raises(FritzConnectionError, match="MD5"):
+            await client.get_docsis()
+        assert box.logins == 1
+
+
+@pytest.mark.parametrize(
+    "challenge", ["2$10000000$aa$10$bb", "2$0$aa$10$bb", "2$10$zz$10$bb", "2$10$aa"]
+)
+async def test_bad_pbkdf2_challenge(fritzbox, challenge: str) -> None:
+    box, url = fritzbox
+    box.new_challenge = lambda: challenge
+    async with aiohttp.ClientSession() as session:
+        client = FritzDocsisClient(session, url, USERNAME, PASSWORD)
+        with pytest.raises(FritzConnectionError, match="challenge"):
+            await client.get_docsis()
+
+
 async def test_session_expiry_relogin(fritzbox) -> None:
     box, url = fritzbox
     async with aiohttp.ClientSession() as session:

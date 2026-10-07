@@ -124,7 +124,8 @@ python tools/fritz_docsis_check.py --url http://192.168.178.1 --user homeassista
 ```
 
 Das Skript fragt das Kennwort ab, zeigt alle Kanäle als Tabelle und die letzten
-Kabel-Ereignisse und speichert die Rohdaten in `fritz_docsis_raw.json` (ohne Zugangsdaten).
+Kabel-Ereignisse und speichert die Rohdaten in `fritz_docsis_raw.json` (ohne
+Zugangsdaten und vom Ereignisprotokoll nur die Kabel-Einträge).
 Passt etwas nicht, ist diese Datei die beste Grundlage für ein Issue.
 
 ### 4. Integration hinzufügen
