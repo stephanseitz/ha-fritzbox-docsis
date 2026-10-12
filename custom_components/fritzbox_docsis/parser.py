@@ -12,7 +12,7 @@ This module is used both by the integration and by the check script
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 import re
 from typing import Any
 
@@ -423,7 +423,8 @@ def parse_segment_load(payload: Any, window_s: int = 300) -> SegmentLoad:
     sample_time = None
     last = _num(payload.get("lastSampleTime"))
     if last is not None and last > 0:
-        sample_time = datetime.fromtimestamp(last, UTC)
+        # timezone.utc instead of datetime.UTC: the check script runs on Python 3.10
+        sample_time = datetime.fromtimestamp(last, timezone.utc)  # noqa: UP017
 
     return SegmentLoad(
         total_down=value("total", "downstream"),
