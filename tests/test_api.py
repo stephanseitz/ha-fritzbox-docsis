@@ -10,6 +10,7 @@ from custom_components.fritzbox_docsis.api import (
     FritzConnectionError,
     FritzDataError,
     FritzDocsisClient,
+    FritzNotSupportedError,
 )
 
 from .mock_fritzbox import PASSWORD, USERNAME
@@ -102,3 +103,44 @@ async def test_unreachable(socket_enabled) -> None:
         client = FritzDocsisClient(session, "http://127.0.0.1:1", USERNAME, PASSWORD)
         with pytest.raises(FritzConnectionError):
             await client.get_docsis()
+
+
+async def test_segment_load(fritzbox) -> None:
+    box, url = fritzbox
+    async with aiohttp.ClientSession() as session:
+        client = FritzDocsisClient(session, url, USERNAME, PASSWORD)
+        load, raw = await client.get_segment_load()
+        assert load.total_up == pytest.approx(88.0)
+        assert raw["sampleInterval"] == 60000
+        assert box.segment_auth == f"AVM-SID {client._sid}"
+        assert box.logins == 1
+
+
+async def test_segment_load_relogin_on_permission_denied(fritzbox) -> None:
+    box, url = fritzbox
+    async with aiohttp.ClientSession() as session:
+        client = FritzDocsisClient(session, url, USERNAME, PASSWORD)
+        await client.get_docsis()
+        box.expire_sessions = True
+        load, _ = await client.get_segment_load()
+        assert load.total_down == pytest.approx(23.0)
+        assert box.logins == 2
+
+
+async def test_segment_load_not_found(fritzbox) -> None:
+    box, url = fritzbox
+    box.segment_api = False
+    async with aiohttp.ClientSession() as session:
+        client = FritzDocsisClient(session, url, USERNAME, PASSWORD)
+        with pytest.raises(FritzNotSupportedError):
+            await client.get_segment_load()
+
+
+async def test_segment_load_permission_denied_persists(fritzbox) -> None:
+    box, url = fritzbox
+    box.segment_denied = True
+    async with aiohttp.ClientSession() as session:
+        client = FritzDocsisClient(session, url, USERNAME, PASSWORD)
+        with pytest.raises(FritzNotSupportedError):
+            await client.get_segment_load()
+        assert box.logins == 2  # one retry with a fresh session, then give up

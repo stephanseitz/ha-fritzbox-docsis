@@ -126,6 +126,21 @@ async def test_entities(hass: HomeAssistant, setup) -> None:
         52.48
     )
 
+    # Segment load (REST API)
+    load_up = hass.states.get(f"{PREFIX}segment_auslastung_senden")
+    assert float(load_up.state) == pytest.approx(88.0)
+    assert load_up.attributes["unit_of_measurement"] == "%"
+    assert load_up.attributes["sample_time"] == "2026-10-12T19:41:00+00:00"
+    assert float(
+        hass.states.get(f"{PREFIX}segment_auslastung_empfangen").state
+    ) == pytest.approx(23.0)
+    assert float(
+        hass.states.get(f"{PREFIX}eigener_anteil_empfangen").state
+    ) == pytest.approx(0.3)
+    assert float(
+        hass.states.get(f"{PREFIX}eigener_anteil_senden").state
+    ) == pytest.approx(0.3)
+
     registry = er.async_get(hass)
     disabled = registry.async_get(
         f"{PREFIX}ds_578_mhz_nicht_korrigierbare_fehler_pro_stunde"
@@ -245,6 +260,41 @@ async def test_unavailable_and_recovery(
     assert hass.states.get(f"{PREFIX}ds_578_mhz_pegel").state == "6.5"
 
 
+async def test_segment_api_missing(
+    hass: HomeAssistant, fritzbox, freezer: FrozenDateTimeFactory
+) -> None:
+    await hass.config.async_set_time_zone("Europe/Berlin")
+    hass.config.language = "de"
+    freezer.move_to("2026-10-02T19:49:00+00:00")
+    box, url = fritzbox
+    box.segment_api = False
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        unique_id=url.split("://")[1],
+        data={CONF_URL: url, CONF_USERNAME: USERNAME, CONF_PASSWORD: PASSWORD},
+    )
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    assert entry.state is ConfigEntryState.LOADED
+    assert not hass.config_entries.flow.async_progress()  # no reauth flow
+    for name in (
+        "segment_auslastung_empfangen",
+        "segment_auslastung_senden",
+        "eigener_anteil_empfangen",
+        "eigener_anteil_senden",
+    ):
+        assert hass.states.get(f"{PREFIX}{name}").state == "unavailable"
+    assert hass.states.get(f"{PREFIX}ds_578_mhz_pegel").state == "6.5"
+    assert hass.states.get(f"{PREFIX}sync_verluste_7_tage").state == "3"
+
+    # A box without the API is not asked again
+    await _tick(hass, freezer, timedelta(minutes=5))
+    assert box.segment_requests == 1
+    assert hass.states.get(f"{PREFIX}ds_578_mhz_pegel").state == "6.5"
+
+
 async def test_unload(hass: HomeAssistant, setup) -> None:
     _, entry = setup
     assert await hass.config_entries.async_unload(entry.entry_id)
@@ -261,6 +311,8 @@ async def test_diagnostics(hass: HomeAssistant, setup) -> None:
     diag = await async_get_config_entry_diagnostics(hass, entry)
     assert diag["entry"][CONF_PASSWORD] == "**REDACTED**"
     assert len(diag["channels"]["downstream"]) == 26
+    assert diag["segment_load_available"] is True
+    assert diag["raw_segment"]["sampleInterval"] == 60000
 
 
 async def test_no_duplicate_events_after_reload(
@@ -320,6 +372,13 @@ async def test_english_names(
     )
     assert hass.states.get("binary_sensor.fritz_box_cable_cable_connection") is not None
     assert hass.states.get("event.fritz_box_cable_cable_sync") is not None
+    for name in (
+        "segment_load_downstream",
+        "segment_load_upstream",
+        "own_share_downstream",
+        "own_share_upstream",
+    ):
+        assert hass.states.get(f"sensor.fritz_box_cable_{name}") is not None
 
 
 async def test_sync_rate_kept_when_log_rotates(

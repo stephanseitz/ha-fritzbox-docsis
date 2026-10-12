@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime
 
 import pytest
 
@@ -13,10 +13,11 @@ from custom_components.fritzbox_docsis.parser import (
     classify_cable_event,
     parse_docinfo,
     parse_log,
+    parse_segment_load,
     parse_sync_rate,
 )
 
-from .mock_fritzbox import BASE_LOG, docinfo_payload
+from .mock_fritzbox import BASE_LOG, docinfo_payload, segment_payload
 
 
 @pytest.mark.parametrize("style", ["new", "old"])
@@ -116,3 +117,43 @@ def test_parse_sync_rate() -> None:
         "Cable internet is available (synchronized with 1126400 / 52480 kbit/s)."
     ) == (1126400, 52480)
     assert parse_sync_rate("Kabel-Internet ist verfügbar.") is None
+
+
+def test_parse_segment_load() -> None:
+    load = parse_segment_load(segment_payload())
+    # Mean of the newest five non-null samples (5 min at 1-min samples)
+    assert load.total_down == pytest.approx(23.0)
+    assert load.total_up == pytest.approx(88.0)  # null in between is skipped
+    assert load.own_down == pytest.approx(0.3)
+    assert load.own_up == pytest.approx(0.3)
+    assert load.sample_time == datetime(2026, 10, 12, 19, 41, tzinfo=UTC)
+
+
+def test_parse_segment_load_window_follows_sample_interval() -> None:
+    payload = segment_payload()
+    payload["sampleInterval"] = 900000  # 15 min samples -> newest value only
+    load = parse_segment_load(payload)
+    assert load.total_down == pytest.approx(24.0)
+    assert load.own_up == pytest.approx(0.5)
+
+
+def test_parse_segment_load_missing_and_null_series() -> None:
+    payload = {
+        "data": [
+            {"mediaType": "cable", "type": "total", "downstream": [None, None]},
+            {"mediaType": "dsl", "type": "own", "downstream": [99.0]},
+        ],
+        "sampleInterval": 60000,
+    }
+    load = parse_segment_load(payload)
+    assert load.total_down is None  # only nulls
+    assert load.total_up is None  # series missing
+    assert load.own_down is None  # only a non-cable "own" series
+    assert load.own_up is None
+    assert load.sample_time is None
+
+
+@pytest.mark.parametrize("payload", [None, [], {}, {"data": {}}, "garbage"])
+def test_parse_segment_load_invalid(payload) -> None:
+    with pytest.raises(ValueError):
+        parse_segment_load(payload)

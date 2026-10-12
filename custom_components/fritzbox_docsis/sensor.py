@@ -12,7 +12,7 @@ from homeassistant.components.sensor import (
     SensorEntityDescription,
     SensorStateClass,
 )
-from homeassistant.const import EntityCategory, UnitOfDataRate
+from homeassistant.const import PERCENTAGE, EntityCategory, UnitOfDataRate
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
@@ -78,11 +78,26 @@ def _worst_channel_attrs(data: DocsisData) -> dict[str, Any]:
     }
 
 
+def _segment(attr: str) -> Callable[[DocsisData], float | None]:
+    def fn(data: DocsisData) -> float | None:
+        load = data.segment_load
+        return None if load is None else getattr(load, attr)
+
+    return fn
+
+
+def _segment_attrs(data: DocsisData) -> dict[str, Any]:
+    load = data.segment_load
+    sample_time = None if load is None else load.sample_time
+    return {"sample_time": None if sample_time is None else sample_time.isoformat()}
+
+
 @dataclass(frozen=True, kw_only=True)
 class DocsisSensorDescription(SensorEntityDescription):
     value_fn: Callable[[DocsisData], Any]
     attrs_fn: Callable[[DocsisData], dict[str, Any]] | None = None
     needs_log: bool = False
+    needs_segment: bool = False
 
 
 GLOBAL_SENSORS: tuple[DocsisSensorDescription, ...] = (
@@ -212,6 +227,43 @@ GLOBAL_SENSORS: tuple[DocsisSensorDescription, ...] = (
         needs_log=True,
     ),
     DocsisSensorDescription(
+        key="segment_load_down",
+        native_unit_of_measurement=PERCENTAGE,
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=1,
+        icon="mdi:account-group",
+        value_fn=_segment("total_down"),
+        needs_segment=True,
+    ),
+    DocsisSensorDescription(
+        key="segment_load_up",
+        native_unit_of_measurement=PERCENTAGE,
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=1,
+        icon="mdi:account-group",
+        value_fn=_segment("total_up"),
+        attrs_fn=_segment_attrs,
+        needs_segment=True,
+    ),
+    DocsisSensorDescription(
+        key="segment_own_down",
+        native_unit_of_measurement=PERCENTAGE,
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=2,
+        icon="mdi:account",
+        value_fn=_segment("own_down"),
+        needs_segment=True,
+    ),
+    DocsisSensorDescription(
+        key="segment_own_up",
+        native_unit_of_measurement=PERCENTAGE,
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=2,
+        icon="mdi:account",
+        value_fn=_segment("own_up"),
+        needs_segment=True,
+    ),
+    DocsisSensorDescription(
         key="ds_channel_count",
         state_class=SensorStateClass.MEASUREMENT,
         entity_category=EntityCategory.DIAGNOSTIC,
@@ -242,6 +294,8 @@ class DocsisGlobalSensor(FritzDocsisEntity, SensorEntity):
             return False
         if self.entity_description.needs_log:
             return self.coordinator.data.log_available
+        if self.entity_description.needs_segment:
+            return self.coordinator.data.segment_load_available
         return True
 
     @property

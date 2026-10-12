@@ -33,6 +33,8 @@ async def async_get_config_entry_diagnostics(
                 "log_available": data.log_available,
                 "recent_cable_events": [e.as_dict() for e in data.recent_events],
                 "raw_docinfo": async_redact_data(data.raw, TO_REDACT),
+                "segment_load_available": data.segment_load_available,
+                "raw_segment": data.raw_segment,
             }
         )
     return result
