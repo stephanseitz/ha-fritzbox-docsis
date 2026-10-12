@@ -6,6 +6,14 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.3.0] – 2026-10-12
+
+### Added
+
+- Modulation sensor per DOCSIS 3.1 downstream OFDM block (e.g. "DS OFDM 751–861 MHz
+  modulation", 4096QAM). As a text sensor it shows up as a timeline in history graphs,
+  so a step down stands out. SC-QAM channels get none: they are fixed at 256QAM.
+
 ## [1.2.0] – 2026-10-12
 
 ### Added
@@ -72,6 +80,7 @@ First public release.
 - Stand-alone check script `tools/fritz_docsis_check.py` (Python 3.10+, no dependencies).
 - Test suite against a simulated FRITZ!Box; CI with hassfest, HACS validation, ruff and pytest.
 
+[1.3.0]: https://github.com/stephanseitz/ha-fritzbox-docsis/releases/tag/v1.3.0
 [1.2.0]: https://github.com/stephanseitz/ha-fritzbox-docsis/releases/tag/v1.2.0
 [1.1.1]: https://github.com/stephanseitz/ha-fritzbox-docsis/releases/tag/v1.1.1
 [1.1.0]: https://github.com/stephanseitz/ha-fritzbox-docsis/releases/tag/v1.1.0

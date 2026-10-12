@@ -294,3 +294,14 @@ views:
       entities:
       - entity: sensor.fritz_box_cable_us_ofdma_modulation
         name: OFDMA
+    - type: history-graph
+      title: Downstream modulation (7 days)
+      hours_to_show: 168
+      grid_options:
+        columns: 12
+        rows: 3
+      entities:
+      - entity: sensor.fritz_box_cable_ds_ofdm_135_325_mhz_modulation
+        name: OFDM 135–325 MHz
+      - entity: sensor.fritz_box_cable_ds_ofdm_751_861_mhz_modulation
+        name: OFDM 751–861 MHz

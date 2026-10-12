@@ -232,6 +232,29 @@
           }
         }
       },
+      "channel_modulation": {
+        "name": "{channel} modulation",
+        "state_attributes": {
+          "docsis": {
+            "name": "DOCSIS"
+          },
+          "channel_id": {
+            "name": "Channel ID"
+          },
+          "frequency_mhz": {
+            "name": "Frequency (MHz)"
+          },
+          "frequency_end_mhz": {
+            "name": "Frequency end (MHz)"
+          },
+          "modulation": {
+            "name": "Modulation"
+          },
+          "active_subcarriers": {
+            "name": "Active subcarriers"
+          }
+        }
+      },
       "channel_corr": {
         "name": "{channel} correctable errors",
         "unit_of_measurement": "errors",

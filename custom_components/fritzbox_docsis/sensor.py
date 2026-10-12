@@ -318,7 +318,7 @@ class DocsisGlobalSensor(FritzDocsisEntity, SensorEntity):
 class ChannelMetric:
     key: str
     unit: str | None
-    state_class: SensorStateClass
+    state_class: SensorStateClass | None
     value_fn: Callable[[DocsisData, str], Any]
     precision: int | None = None
     enabled_default: bool = True
@@ -426,6 +426,15 @@ DS31_METRICS: tuple[ChannelMetric, ...] = (
         precision=0,
         icon="mdi:speedometer",
         value_fn=lambda d, k: d.noncorr_rate.get(k),
+    ),
+    # Text sensor: a history graph shows it as a timeline, so a step down of the
+    # OFDM block (e.g. 4096QAM -> 1024QAM) stands out
+    ChannelMetric(
+        key="modulation",
+        unit=None,
+        state_class=None,
+        icon="mdi:waveform",
+        value_fn=_ds_attr("modulation"),
     ),
 )
 
