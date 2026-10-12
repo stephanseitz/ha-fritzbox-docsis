@@ -6,6 +6,12 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- Modulation sensor per DOCSIS 3.1 downstream OFDM block (e.g. "DS OFDM 751–861 MHz
+  modulation", 4096QAM). As a text sensor it shows up as a timeline in history graphs,
+  so a step down stands out. SC-QAM channels get none: they are fixed at 256QAM.
+
 ## [1.2.0] – 2026-10-12
 
 ### Added

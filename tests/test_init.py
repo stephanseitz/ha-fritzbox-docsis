@@ -66,6 +66,12 @@ async def test_entities(hass: HomeAssistant, setup) -> None:
     assert hass.states.get(f"{PREFIX}ds_578_mhz_pegel").state == "6.5"
     assert hass.states.get(f"{PREFIX}ds_578_mhz_mse").state == "-37.4"
     assert hass.states.get(f"{PREFIX}ds_ofdm_751_861_mhz_mer").state == "36.0"
+    modulation = hass.states.get(f"{PREFIX}ds_ofdm_135_325_mhz_modulation")
+    assert modulation.state == "4096QAM"
+    assert "state_class" not in modulation.attributes  # text, shown as a timeline
+    assert hass.states.get(f"{PREFIX}ds_ofdm_751_861_mhz_modulation").state == "4096QAM"
+    # SC-QAM channels are fixed at 256QAM: no modulation sensor for them
+    assert hass.states.get(f"{PREFIX}ds_578_mhz_modulation") is None
     assert hass.states.get(f"{PREFIX}us_ofdma_48_65_mhz_pegel").state == "34.8"
     assert hass.states.get(f"{PREFIX}us_ofdma_modulation").state == "256QAM"
     assert hass.states.get(f"{PREFIX}ds_pegel_min").state == "-1.2"

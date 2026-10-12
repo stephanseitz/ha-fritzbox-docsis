@@ -183,7 +183,7 @@ entities without a restart.
 | Channel type | Entities |
 |---|---|
 | **Downstream DOCSIS 3.0** (`ds_578_mhz_…`) | power level, MSE, correctable errors, uncorrectable errors, correctable errors per hour, uncorrectable errors per hour *(disabled by default)* |
-| **Downstream OFDM** (`ds_ofdm_751_861_mhz_…`) | power level, MER, uncorrectable errors, uncorrectable errors per hour |
+| **Downstream OFDM** (`ds_ofdm_751_861_mhz_…`) | power level, MER, uncorrectable errors, uncorrectable errors per hour, modulation (e.g. 4096QAM, shown as a timeline in history graphs) |
 | **Upstream** (`us_37_2_mhz_…`, `us_ofdma_48_65_mhz_…`) | power level |
 
 Attributes: `docsis`, `channel_id`, `frequency_mhz`, `frequency_end_mhz` (OFDM),

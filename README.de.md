@@ -184,7 +184,7 @@ erscheinen ohne Neustart als neue Entitäten.
 | Kanaltyp | Entitäten |
 |---|---|
 | **Downstream DOCSIS 3.0** (`ds_578_mhz_…`) | Pegel, MSE, korrigierbare Fehler, nicht korrigierbare Fehler, korrigierbare Fehler pro Stunde, nicht korrigierbare Fehler pro Stunde *(standardmäßig deaktiviert)* |
-| **Downstream OFDM** (`ds_ofdm_751_861_mhz_…`) | Pegel, MER, nicht korrigierbare Fehler, nicht korrigierbare Fehler pro Stunde |
+| **Downstream OFDM** (`ds_ofdm_751_861_mhz_…`) | Pegel, MER, nicht korrigierbare Fehler, nicht korrigierbare Fehler pro Stunde, Modulation (z. B. 4096QAM, im Verlaufsgraphen als Zeitleiste) |
 | **Upstream** (`us_37_2_mhz_…`, `us_ofdma_48_65_mhz_…`) | Pegel |
 
 Attribute: `docsis`, `channel_id`, `frequency_mhz`, `frequency_end_mhz` (OFDM),
