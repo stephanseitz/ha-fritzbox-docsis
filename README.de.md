@@ -54,6 +54,8 @@ zusammenhängt und wann genau jede Neusynchronisierung war.
   auch wenn Home Assistant die Box während des Ausfalls nicht erreicht hat.
 - ⚡ **Ereignisse** `fritzbox_docsis_sync_lost` / `fritzbox_docsis_sync_restored` und eine
   Event-Entität für Logbuch und Automationen.
+- 👥 **Segment-Auslastung**: wie stark das Kabelsegment ausgelastet ist (alle Kunden am
+  selben Strang) und dein eigener Anteil, Empfangen und Senden, als Verlauf in Home Assistant.
 - 📊 **Langzeitstatistik** ohne Zusatzaufwand (Zähler als `total_increasing`, Pegel als
   `measurement`), bereit für Statistik-Diagramme über Monate.
 - 🧭 **Stabile Entity-IDs**: Kanäle heißen nach ihrer **Frequenz**, nicht nach der
@@ -162,6 +164,8 @@ Die Entity-IDs folgen der Sprache von Home Assistant. Die Beispiele unten gelten
 | Synchron seit | `sensor.fritz_box_kabel_synchron_seit` | Zeitpunkt |
 | Sync-Rate Empfangen / Senden | `sensor.fritz_box_kabel_sync_rate_empfangen` | Mbit/s, aus dem letzten Protokolleintrag „Kabel-Internet ist verfügbar“ |
 | Sync-Verluste 24 h / 7 Tage | `sensor.fritz_box_kabel_sync_verluste_24_h` | |
+| Segment-Auslastung Empfangen / Senden | `sensor.fritz_box_kabel_segment_auslastung_senden` | %, geschätzte Auslastung des gesamten Kabelsegments. Attribut `sample_time`. |
+| Eigener Anteil Empfangen / Senden | `sensor.fritz_box_kabel_eigener_anteil_senden` | %, dein eigener Anteil an der Segment-Auslastung |
 | Korrigierbare / nicht korrigierbare Fehler gesamt | `sensor.fritz_box_kabel_korrigierbare_fehler_gesamt` | Zähler, startet bei Neusynchronisierung bei 0 |
 | Korrigierbare / nicht korrigierbare Fehler pro Stunde | `sensor.fritz_box_kabel_korrigierbare_fehler_pro_stunde` | Rate über alle Downstream-Kanäle |
 | Auffälligster Kanal | `sensor.fritz_box_kabel_auffalligster_kanal` | Kanal mit der höchsten Rate korrigierbarer Fehler. Attribut `top_channels`. |
@@ -265,6 +269,14 @@ Typische Muster:
   Rückweg hin. Den Netzbetreiber die Leitung prüfen lassen und ihm den Verlauf zeigen.
 - **Sinkende OFDMA-Modulation** (z. B. von 256QAM auf 64QAM) heißt: Der Betreiber sieht
   einen schlechteren Rückweg und stuft herunter.
+- **Die Segment-Auslastung** ist eine **Schätzung der Box**, kein vom Netzbetreiber
+  gemessener Wert. *Segment-Auslastung* meint alle Kunden am selben Kabelsegment,
+  *eigener Anteil* deinen Teil davon. Liegt das Segment beim Senden jeden Abend bei
+  60–90 %, während dein eigener Anteil klein bleibt, teilen sich zu viele Kunden den
+  Strang: Langsame Uploads und Lags zu diesen Zeiten sind dann ein Kapazitätsproblem des
+  Betreibers, nicht deiner Verkabelung. Am besten zusammen mit der OFDMA-Modulation und
+  den Fehlerraten betrachten. Verfügbar ab FRITZ!OS-Versionen mit REST-API; geprüft auf
+  einer FRITZ!Box 6660 Cable mit FRITZ!OS 8.25.
 
 ## Funktionsweise
 
@@ -272,6 +284,10 @@ Typische Muster:
   bestehen. Läuft sie ab, meldet sich die Integration unbemerkt neu an.
 - Liest von `data.lua` die Seite `docInfo` (das JSON hinter *Kabel-Informationen*) und die
   Seite `log`.
+- Liest die Segment-Auslastung über die REST-API `/api/v0/monitor/segment/0` (die Daten
+  hinter *Kabel-Informationen › Netzauslastung*) mit derselben Sitzung. Jeder Wert ist der
+  Mittelwert der letzten 5 Minuten. Boxen ohne diese API werden einmal erkannt; die vier
+  Segment-Sensoren bleiben dann *nicht verfügbar*, alles andere läuft wie bisher.
 - Fehlerraten sind die Differenz der Zähler geteilt durch die vergangene Zeit; ein
   kleiner gewordener Zähler markiert eine Neusynchronisierung und ergibt für dieses
   Intervall *unbekannt*.

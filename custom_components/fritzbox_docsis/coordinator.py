@@ -20,6 +20,7 @@ from .api import (
     FritzDataError,
     FritzDocsisClient,
     FritzError,
+    FritzNotSupportedError,
 )
 from .const import (
     CONF_FETCH_LOG,
@@ -36,6 +37,7 @@ from .parser import (
     CABLE_SYNC_OK,
     DocsisInfo,
     LogEntry,
+    SegmentLoad,
     classify_cable_event,
     parse_sync_rate,
 )
@@ -92,6 +94,9 @@ class DocsisData:
     sync_rate_up: int | None = None
     recent_events: list[CableEvent] = field(default_factory=list)
     new_events: list[CableEvent] = field(default_factory=list)
+    segment_load: SegmentLoad | None = None
+    segment_load_available: bool = False
+    raw_segment: Any = None
 
 
 type FritzDocsisConfigEntry = ConfigEntry[FritzDocsisCoordinator]
@@ -125,6 +130,8 @@ class FritzDocsisCoordinator(DataUpdateCoordinator[DocsisData]):
         self._prev_totals: tuple[int, int] | None = None
         self._prev_ts: datetime | None = None
         self._known_events: list[CableEvent] | None = None
+        # Cleared once the box answers that it has no segment API (until reload)
+        self._segment_supported = True
 
     @property
     def fetch_log(self) -> bool:
@@ -157,6 +164,20 @@ class FritzDocsisCoordinator(DataUpdateCoordinator[DocsisData]):
             else:
                 data.log_available = True
                 self._evaluate_log(data, log, now)
+
+        if self._segment_supported:
+            try:
+                segment = await self.client.get_segment_load()
+            except FritzAuthError as err:
+                raise ConfigEntryAuthFailed(str(err)) from err
+            except FritzNotSupportedError as err:
+                _LOGGER.debug("Segment load not supported, not asking again: %s", err)
+                self._segment_supported = False
+            except FritzError as err:
+                _LOGGER.debug("Segment load not available: %s", err)
+            else:
+                data.segment_load, data.raw_segment = segment
+                data.segment_load_available = True
 
         if not data.log_available and data.counters_reset:
             # Without the log: a counter reset indicates a resync

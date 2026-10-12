@@ -54,6 +54,8 @@ something in your house, and exactly when each resync happened.
   even if Home Assistant could not reach the box during the outage.
 - ⚡ **Events** `fritzbox_docsis_sync_lost` / `fritzbox_docsis_sync_restored` and an
   event entity for the logbook and automations.
+- 👥 **Segment load**: how busy the cable segment is (all customers on your line) and
+  your own share, downstream and upstream, kept as history in Home Assistant.
 - 📊 **Long-term statistics** out of the box (`total_increasing` counters, `measurement`
   levels), ready for statistics graphs over months.
 - 🧭 **Stable entity IDs**: channels are named by **frequency**, not channel ID, because
@@ -161,6 +163,8 @@ with German they look like `sensor.fritz_box_kabel_ds_578_mhz_korrigierbare_fehl
 | In sync since | `sensor.fritz_box_cable_in_sync_since` | Timestamp |
 | Sync rate downstream / upstream | `sensor.fritz_box_cable_sync_rate_downstream` | Mbit/s, from the last "cable available" log entry |
 | Sync losses 24 h / 7 days | `sensor.fritz_box_cable_sync_losses_24_h` | |
+| Segment load downstream / upstream | `sensor.fritz_box_cable_segment_load_upstream` | %, estimated load of the whole cable segment. Attribute `sample_time`. |
+| Own share downstream / upstream | `sensor.fritz_box_cable_own_share_upstream` | %, your own part of the segment load |
 | Correctable / uncorrectable errors total | `sensor.fritz_box_cable_correctable_errors_total` | Counter, resets on resync |
 | Correctable / uncorrectable errors per hour | `sensor.fritz_box_cable_correctable_errors_per_hour` | Rate across all downstream channels |
 | Worst channel | `sensor.fritz_box_cable_worst_channel` | Channel with the highest correctable error rate. Attribute `top_channels`. |
@@ -260,12 +264,23 @@ Typical patterns:
   a return path problem. Ask the operator to check the line; show them the history.
 - **OFDMA modulation dropping** (e.g. from 256QAM to 64QAM) means the operator saw a
   worse return path and stepped down.
+- **Segment load** is the box's own **estimate**, not a value measured by the operator.
+  *Segment load* covers all customers on the same cable segment, *own share* is your
+  part of it. A segment upstream that sits at 60–90 % every evening while your own share
+  stays small means the line is shared by too many customers: slow uploads and lag at
+  those times are the operator's capacity problem, not your cabling. Compare it with the
+  OFDMA modulation and your error rates. Available on FRITZ!OS versions with the REST
+  API; verified on a FRITZ!Box 6660 Cable with FRITZ!OS 8.25.
 
 ## How it works
 
 - Logs in via `login_sid.lua?version=2` (PBKDF2, MD5 fallback) and keeps the session.
   On an expired session it logs in again transparently.
 - Reads `data.lua` page `docInfo` (the JSON behind *Cable information*) and page `log`.
+- Reads the segment load from the REST API `/api/v0/monitor/segment/0` (the data behind
+  *Cable information › Network load*), with the same session. Each value is the mean of
+  the last 5 minutes. Boxes without this API are detected once; the four segment
+  sensors then stay *unavailable* and everything else works as before.
 - Error rates are the counter delta divided by the elapsed time; a counter that went down
   marks a resync and yields *unknown* for that interval.
 - Cable events are detected from the log texts (German and English FRITZ!OS texts are

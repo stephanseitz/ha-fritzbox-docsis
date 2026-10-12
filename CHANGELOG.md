@@ -6,6 +6,16 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.2.0] – 2026-10-12
+
+### Added
+
+- Segment load sensors (total / own share, downstream / upstream) from the REST API
+  `/api/v0/monitor/segment`, i.e. the box's estimate shown under *Cable information ›
+  Network load*. Each value is the mean of the last 5 minutes. On boxes without this
+  API the four sensors stay unavailable; nothing else changes and no re-authentication
+  is triggered.
+
 ## [1.1.1] – 2026-10-07
 
 ### Fixed
@@ -62,6 +72,7 @@ First public release.
 - Stand-alone check script `tools/fritz_docsis_check.py` (Python 3.10+, no dependencies).
 - Test suite against a simulated FRITZ!Box; CI with hassfest, HACS validation, ruff and pytest.
 
+[1.2.0]: https://github.com/stephanseitz/ha-fritzbox-docsis/releases/tag/v1.2.0
 [1.1.1]: https://github.com/stephanseitz/ha-fritzbox-docsis/releases/tag/v1.1.1
 [1.1.0]: https://github.com/stephanseitz/ha-fritzbox-docsis/releases/tag/v1.1.0
 [1.0.0]: https://github.com/stephanseitz/ha-fritzbox-docsis/releases/tag/v1.0.0

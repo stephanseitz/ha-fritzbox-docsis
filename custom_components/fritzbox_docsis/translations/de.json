@@ -136,6 +136,23 @@
       "sync_losses_7d": {
         "name": "Sync-Verluste 7 Tage"
       },
+      "segment_load_down": {
+        "name": "Segment-Auslastung Empfangen"
+      },
+      "segment_load_up": {
+        "name": "Segment-Auslastung Senden",
+        "state_attributes": {
+          "sample_time": {
+            "name": "Messzeitpunkt"
+          }
+        }
+      },
+      "segment_own_down": {
+        "name": "Eigener Anteil Empfangen"
+      },
+      "segment_own_up": {
+        "name": "Eigener Anteil Senden"
+      },
       "ds_channel_count": {
         "name": "DS Kanäle"
       },

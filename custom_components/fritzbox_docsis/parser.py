@@ -12,7 +12,7 @@ This module is used both by the integration and by the check script
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime
 import re
 from typing import Any
 
@@ -81,6 +81,17 @@ class LogEntry:
     message: str
     group: str | None = None
     msg_id: int | None = None
+
+
+@dataclass(slots=True)
+class SegmentLoad:
+    """Estimated load of the cable segment in percent of its capacity."""
+
+    total_down: float | None  # all customers on the segment
+    total_up: float | None
+    own_down: float | None  # own share
+    own_up: float | None
+    sample_time: datetime | None  # timezone-aware, time of the newest sample
 
 
 # Categories of cable events in the event log
@@ -352,3 +363,72 @@ def parse_log(payload: dict[str, Any]) -> list[LogEntry]:
 
     entries.sort(key=lambda e: e.timestamp, reverse=True)
     return entries
+
+
+# --------------------------------------------------------------------------- #
+# Segment load (REST API /api/v0/monitor/segment/<id>)
+# --------------------------------------------------------------------------- #
+
+_DEFAULT_SAMPLE_INTERVAL_MS = 60_000
+
+
+def _mean_of_last(values: Any, count: int) -> float | None:
+    if not isinstance(values, list):
+        return None
+    numbers = [
+        float(v)
+        for v in values
+        if isinstance(v, (int, float)) and not isinstance(v, bool)
+    ]
+    if not numbers:
+        return None
+    tail = numbers[-count:]
+    return round(sum(tail) / len(tail), 3)
+
+
+def parse_segment_load(payload: Any, window_s: int = 300) -> SegmentLoad:
+    """Parse the response of ``/api/v0/monitor/segment/<id>``.
+
+    Expected structure (FRITZ!OS 8.x)::
+
+        {"data": [{"mediaType": "cable", "type": "own",
+                   "downstream": [...], "upstream": [...]},
+                  {"mediaType": "cable", "type": "total", ...}],
+         "lastSampleTime": 1791834060, "sampleInterval": 60000}
+
+    The arrays are chronological (newest value last) and may contain ``null``.
+    Each value is the mean of the newest non-null samples covering ``window_s``,
+    so that the sensors match the polling interval instead of single minutes.
+    """
+    if not isinstance(payload, dict) or not isinstance(payload.get("data"), list):
+        raise ValueError("Response contains no segment data")
+
+    interval_ms = _num(payload.get("sampleInterval")) or _DEFAULT_SAMPLE_INTERVAL_MS
+    count = max(1, round(window_s / (interval_ms / 1000)))
+
+    series: dict[str, dict[str, Any]] = {}
+    for item in payload["data"]:
+        if not isinstance(item, dict):
+            continue
+        if item.get("mediaType", "cable") != "cable":
+            continue
+        kind = item.get("type")
+        if kind in ("own", "total") and kind not in series:
+            series[kind] = item
+
+    def value(kind: str, direction: str) -> float | None:
+        item = series.get(kind)
+        return None if item is None else _mean_of_last(item.get(direction), count)
+
+    sample_time = None
+    last = _num(payload.get("lastSampleTime"))
+    if last is not None and last > 0:
+        sample_time = datetime.fromtimestamp(last, UTC)
+
+    return SegmentLoad(
+        total_down=value("total", "downstream"),
+        total_up=value("total", "upstream"),
+        own_down=value("own", "downstream"),
+        own_up=value("own", "upstream"),
+        sample_time=sample_time,
+    )

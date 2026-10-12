@@ -3,17 +3,25 @@
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Awaitable, Callable
 import contextlib
 import hashlib
 import json
 import logging
-from typing import Any
+from typing import Any, TypeVar
 import xml.etree.ElementTree as ET
 
 import aiohttp
 
 from .const import INVALID_SID
-from .parser import DocsisInfo, LogEntry, parse_docinfo, parse_log
+from .parser import (
+    DocsisInfo,
+    LogEntry,
+    SegmentLoad,
+    parse_docinfo,
+    parse_log,
+    parse_segment_load,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -41,6 +49,13 @@ class FritzAuthError(FritzError):
 
 class FritzDataError(FritzError):
     """Unexpected response or no cable data."""
+
+
+class FritzNotSupportedError(FritzDataError):
+    """The box does not offer this interface (older FRITZ!OS or missing rights)."""
+
+
+_T = TypeVar("_T")
 
 
 def _pbkdf2_response(challenge: str, password: str) -> str:
@@ -210,24 +225,72 @@ class FritzDocsisClient:
             return None
         return payload
 
+    async def _with_session(
+        self, request: Callable[[], Awaitable[_T | None]]
+    ) -> _T | None:
+        """Run a request that returns None on an invalid session, re-login once."""
+        async with self._lock:
+            if not self._sid:
+                await self.login()
+            result = await request()
+            if result is None:
+                _LOGGER.debug("Session invalid, logging in again")
+                await self.login()
+                result = await request()
+            return result
+
     async def fetch_page(
         self, page: str, extra: dict[str, str] | None = None
     ) -> dict[str, Any]:
         """Fetch a data.lua page, logging in (again) if necessary."""
-        async with self._lock:
-            if not self._sid:
-                await self.login()
-            payload = await self._post_data(page, extra)
-            if payload is None:
-                _LOGGER.debug("Session invalid, logging in again")
-                await self.login()
-                payload = await self._post_data(page, extra)
-            if payload is None:
-                raise FritzAuthError(
-                    "Access denied – does the user have the "
-                    '"FRITZ!Box Settings" permission (and, if needed, internet access)?'
-                )
-            return payload
+        payload = await self._with_session(lambda: self._post_data(page, extra))
+        if payload is None:
+            raise FritzAuthError(
+                "Access denied – does the user have the "
+                '"FRITZ!Box Settings" permission (and, if needed, internet access)?'
+            )
+        return payload
+
+    # ------------------------------------------------------------------ #
+    # REST API (/api/v0/...)
+    # ------------------------------------------------------------------ #
+
+    async def _get_api(self, path: str) -> Any | None:
+        """GET a REST API path. Returns None if the session is not accepted."""
+        try:
+            async with self._session.get(
+                f"{self._url}{path}",
+                headers={"Authorization": f"AVM-SID {self._sid or ''}"},
+                timeout=REQUEST_TIMEOUT,
+            ) as resp:
+                status = resp.status
+                text = await resp.text()
+        except (TimeoutError, aiohttp.ClientError) as err:
+            raise FritzConnectionError(f"FRITZ!Box not reachable: {err}") from err
+
+        if status == 404:
+            raise FritzNotSupportedError(f"{path} not available on this FRITZ!Box")
+        if status in (401, 403) or (status == 400 and _permission_denied(text)):
+            return None
+        if status >= 400:
+            raise FritzConnectionError(f"HTTP {status} from {path}")
+        try:
+            return await asyncio.get_running_loop().run_in_executor(
+                None, _json_loads, text
+            )
+        except ValueError as err:
+            raise FritzDataError(f"No JSON response from {path}") from err
+
+    async def get_segment_load(self, subset: int = 0) -> tuple[SegmentLoad, Any]:
+        """Estimated segment load (Internet > Cable Information > Network load)."""
+        path = f"/api/v0/monitor/segment/{subset}"
+        payload = await self._with_session(lambda: self._get_api(path))
+        if payload is None:
+            raise FritzNotSupportedError(f"Permission denied for {path}")
+        try:
+            return parse_segment_load(payload), payload
+        except ValueError as err:
+            raise FritzDataError(str(err)) from err
 
     async def get_docsis(self) -> tuple[DocsisInfo, dict[str, Any]]:
         payload = await self.fetch_page("docInfo")
@@ -246,3 +309,20 @@ class FritzDocsisClient:
 
 def _json_loads(text: str) -> Any:
     return json.loads(text)
+
+
+def _permission_denied(text: str) -> bool:
+    """Detect {"errors": [{"message": "permission denied: ...", "code": 3001}]}."""
+    with contextlib.suppress(ValueError):
+        payload = json.loads(text)
+        errors = payload.get("errors") if isinstance(payload, dict) else None
+        if isinstance(errors, list):
+            return any(
+                isinstance(e, dict)
+                and (
+                    e.get("code") == 3001
+                    or "permission denied" in str(e.get("message", ""))
+                )
+                for e in errors
+            )
+    return False

@@ -187,6 +187,47 @@ BASE_LOG = [
 ]
 
 
+# Newest five samples of each series (chronological). The segment load sensors
+# show their mean: total down 23.0, total up 88.0, own down 0.3, own up 0.3
+SEGMENT_TAILS: dict[tuple[str, str], list[float | None]] = {
+    ("total", "downstream"): [22.0, 22.5, 23.0, 23.5, 24.0],
+    ("total", "upstream"): [86.0, 88.0, None, 90.0, 87.0, 89.0],
+    ("own", "downstream"): [0.3, 0.3, 0.3, 0.3, 0.3],
+    ("own", "upstream"): [0.1, 0.2, 0.3, 0.4, 0.5],
+}
+SEGMENT_LAST_SAMPLE = 1791834060  # 2026-10-12T19:41:00+00:00
+SEGMENT_DENIED = {
+    "errors": [
+        {"message": "permission denied: /api/v0/monitor/segment/0", "code": 3001}
+    ]
+}
+
+
+def segment_payload(
+    tails: dict[tuple[str, str], list[float | None]] | None = None,
+) -> dict[str, Any]:
+    """Response of /api/v0/monitor/segment/0: 60 samples, null gaps at the start."""
+    tails = tails or SEGMENT_TAILS
+
+    def series(kind: str, direction: str) -> list[float | None]:
+        tail = tails[(kind, direction)]
+        return [None] * 10 + [50.0] * (60 - 10 - len(tail)) + tail
+
+    return {
+        "data": [
+            {
+                "mediaType": "cable",
+                "type": kind,
+                "downstream": series(kind, "downstream"),
+                "upstream": series(kind, "upstream"),
+            }
+            for kind in ("own", "total")
+        ],
+        "lastSampleTime": SEGMENT_LAST_SAMPLE,
+        "sampleInterval": 60000,
+    }
+
+
 class MockFritzBox:
     """State of the simulated box."""
 
@@ -202,6 +243,10 @@ class MockFritzBox:
         self.logins = 0
         self.expire_sessions = False
         self.fail_docinfo = False
+        self.segment_api = True  # False -> 404 like a box without REST API
+        self.segment_denied = False  # always "permission denied"
+        self.segment_requests = 0
+        self.segment_auth: str | None = None
 
     def new_challenge(self) -> str:
         if self.md5:
@@ -235,6 +280,7 @@ class MockFritzBox:
         app.router.add_get("/login_sid.lua", self.login_get)
         app.router.add_post("/login_sid.lua", self.login_post)
         app.router.add_post("/data.lua", self.data)
+        app.router.add_get("/api/v0/monitor/segment/{subset}", self.segment)
         return app
 
     @staticmethod
@@ -261,12 +307,26 @@ class MockFritzBox:
             return self._xml(sid)
         return self._xml("0000000000000000", self.new_challenge(), block=0)
 
-    async def data(self, request: web.Request) -> web.Response:
-        form = await request.post()
-        sid = str(form.get("sid", ""))
+    def _apply_expiry(self) -> None:
         if self.expire_sessions:
             self.sids.clear()
             self.expire_sessions = False
+
+    async def segment(self, request: web.Request) -> web.Response:
+        self.segment_requests += 1
+        if not self.segment_api:
+            raise web.HTTPNotFound
+        self._apply_expiry()
+        self.segment_auth = request.headers.get("Authorization")
+        scheme, _, sid = (self.segment_auth or "").partition(" ")
+        if self.segment_denied or scheme != "AVM-SID" or sid not in self.sids:
+            return web.json_response(SEGMENT_DENIED, status=400)
+        return web.json_response(segment_payload())
+
+    async def data(self, request: web.Request) -> web.Response:
+        form = await request.post()
+        sid = str(form.get("sid", ""))
+        self._apply_expiry()
         if sid not in self.sids:
             # This is how the box behaves: login page instead of JSON
             return web.Response(
